@@ -128,10 +128,12 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        if (!imgContent?.generatedImages?.[0]?.image) {
+        const imageUrl = imgContent?.generatedImages?.[0]?.image;
+        if (!imageUrl) {
           throw new Error("Image generation failed");
         }
-        const imageUrl = imgContent.generatedImages[0].image;
+
+        imageUrl.imageBytes
         // Here you would typically store the image URL in your database or return it
       };
       const generateAndStoreAudio = () => {
