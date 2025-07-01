@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        const imageBytes = imgContent?.generatedImages?.[0]?.imageBytes;
+        const imageBytes = imgContent?.generatedImages?.[0]?.image?.imageBytes;
         if (!imageBytes) {
           throw new Error("Image generation failed");
         }
