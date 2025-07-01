@@ -2,9 +2,9 @@ import { after, NextRequest, NextResponse } from "next/server";
 import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { fal } from "@fal-ai/client";
-import { z } from "zod";
+import { put } from "@vercel/blob";
 
-import { tone } from "~/ai/validation";
+import { z_contentResponse, z_generateContentInterface } from "~/ai/validation";
 import { GoogleGenAI, Modality } from "@google/genai";
 import { generateAudioTTS } from "~/ai/apis/generateAudioTextToSpeech";
 import { chat, media } from "~/server/db/schema";
@@ -12,24 +12,6 @@ import { db } from "~/server/db";
 import { and, desc, eq } from "drizzle-orm";
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-export const z_generateContentInterface = z.object({
-  prompt: z.string().min(1, "Prompt is required"),
-  tone: tone,
-  imageStyle: z.string().min(1, "Image style is required"),
-  voiceStyle: z.string().min(1, "Voice style is required"),
-  contentLengthInSeconds: z.number().optional().default(5),
-});
-
-export const z_contentResponse = z.object({
-  result: z.object({
-    headline: z.string(),
-    caption: z.string(),
-    audioPrompt: z.string(),
-    imagePrompt: z.string(),
-  }),
-  chatId: z.number(),
-});
 
 export async function POST(request: NextRequest) {
   try {
@@ -100,23 +82,6 @@ export async function POST(request: NextRequest) {
         if (!content.imagePrompt) {
           throw new Error("Image prompt is missing in the generated content");
         }
-        // Initializeing the media type in the database
-        // const lastIndex = await db
-        //   .select({
-        //     index: media.index,
-        //   })
-        //   .from(media)
-        //   .where(and(eq(media.chatId, dataBaseID), eq(media.type, "image")))
-        //   .orderBy(desc(media.index))
-        //   .limit(1);
-
-
-        // db.insert(media).values({
-        //   chatId: dataBaseID,
-        //   index: (lastIndex.at(0)?.index ?? 0) + 1,
-        //   type: "image",
-        //   url: "",
-        // });
 
         const imgContent = await ai.models.generateImages({
           model: "imagen-4.0-generate-002",
@@ -128,20 +93,54 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        const imageUrl = imgContent?.generatedImages?.[0]?.image;
-        if (!imageUrl) {
+        const imageBytes = imgContent?.generatedImages?.[0]?.imageBytes;
+        if (!imageBytes) {
           throw new Error("Image generation failed");
         }
 
-        imageUrl.imageBytes
-        // Here you would typically store the image URL in your database or return it
+        // Convert base64 to Buffer if needed
+        const buffer =
+          typeof imageBytes === "string"
+            ? Buffer.from(imageBytes, "base64")
+            : imageBytes;
+
+        // Upload to Vercel Blob
+        const blob = await put(
+          `chat-${dataBaseID}-image-${Date.now()}.jpg`,
+          buffer,
+          {
+            access: "public",
+            contentType: "image/jpeg",
+          }
+        );
+
+        // Get the last index for this chat and type
+        const lastIndex = await db
+          .select({ index: media.index })
+          .from(media)
+          .where(and(eq(media.chatId, dataBaseID), eq(media.type, "image")))
+          .orderBy(desc(media.index))
+          .limit(1);
+
+        // Insert media record with incremented index
+        await db.insert(media).values({
+          chatId: dataBaseID,
+          index: (lastIndex.at(0)?.index ?? 0) + 1,
+          type: "image",
+          url: blob.url,
+          // add other fields if needed
+        });
       };
+
       const generateAndStoreAudio = () => {
         if (!content.imagePrompt) {
           throw new Error("Image prompt is missing in the generated content");
         }
         const audioContent = generateAudioTTS(content.audioPrompt);
       };
+
+      // Call the image generation/upload function
+      await generateAndStoreImage();
     });
 
     return NextResponse.json(

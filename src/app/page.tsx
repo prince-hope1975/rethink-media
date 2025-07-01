@@ -17,7 +17,7 @@ import { Badge } from "~/components/ui/badge";
 import { Wand2, Loader2 } from "lucide-react";
 import { FileUpload } from "~/components/file-upload";
 import { GeneratedContent } from "~/components/generated-content";
-import { z_generateContentInterface } from "./api/generate-content/route";
+import { z_generateContentInterface } from "~/ai/validation";
 import axios from "axios";
 import SWal from "sweetalert2";
 export default function Home() {
