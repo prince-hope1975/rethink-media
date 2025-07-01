@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
 import { Loader2, Wand2 } from "lucide-react"
 
 interface ContentGeneratorProps {
-  onGenerate: (prompt: string, options: any) => void
+  onGenerate: (prompt: string, options: unknown) => void
   isGenerating: boolean
 }
 

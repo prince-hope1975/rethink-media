@@ -11,7 +11,10 @@ const models = z.enum([
   "lyria-realtime-exp-4",
 ]);
 
-export async function liveMusic(client: GoogleGenAI, model: z.infer<typeof models>) {
+export async function liveMusic(
+  client: GoogleGenAI,
+  model: z.infer<typeof models>
+) {
   const responseQueue: LiveMusicServerMessage[] = [];
 
   // This should use an async queue.
@@ -63,12 +66,12 @@ export async function liveMusic(client: GoogleGenAI, model: z.infer<typeof model
     },
   });
 
-  session.setMusicGenerationConfig({
+  await session.setMusicGenerationConfig({
     musicGenerationConfig: {
       bpm: 140,
     },
   });
-  session.setWeightedPrompts({
+  await session.setWeightedPrompts({
     weightedPrompts: [{ text: "Jazz", weight: 1.0 }],
   });
   session.play();
@@ -77,7 +80,6 @@ export async function liveMusic(client: GoogleGenAI, model: z.infer<typeof model
 
   session.close();
 }
-
 
 // Usage
 // async function main() {
@@ -94,4 +96,3 @@ export async function liveMusic(client: GoogleGenAI, model: z.infer<typeof model
 //     await liveMusic(client, model).catch((e) => console.error("got error", e));
 //   }
 // }
-
