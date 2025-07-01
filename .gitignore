@@ -46,3 +46,4 @@ yarn-error.log*
 .idea
 
 eslint.config.js
+_eslint.config.js
