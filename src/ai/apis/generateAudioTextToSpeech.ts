@@ -106,7 +106,7 @@ function convertToWav(rawData: string, mimeType: string) {
 
 function parseMimeType(mimeType: string) {
   const [fileType, ...params] = mimeType.split(";").map((s) => s.trim());
-  const [_, format] = fileType!.split("/");
+  const [, format] = fileType!.split("/");
 
   const options: Partial<WavConversionOptions> = {
     numChannels: 1,
