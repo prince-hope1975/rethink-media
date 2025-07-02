@@ -1,6 +1,6 @@
 {
-  "id": "a6fd4b62-6678-4411-a3ec-d62dbbab64b4",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "c8a4526b-a6b6-4051-8769-750f55a6c571",
+  "prevId": "a6fd4b62-6678-4411-a3ec-d62dbbab64b4",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -161,6 +161,33 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "media_chat_type_index_unique": {
+          "name": "media_chat_type_index_unique",
+          "columns": [
+            {
+              "expression": "chatId",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "media_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "index",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
           "concurrently": false,
           "method": "btree",
           "with": {}

@@ -34,8 +34,8 @@ export async function generateAudioTTS(text: string) {
   const model = "gemini-2.5-pro-preview-tts";
   const contents = [
     {
-      role: "narrator",
-      //   role: "user",
+      // role: "narrator",
+      role: "user",
       parts: [
         {
           text: text ?? `INSERT_INPUT_HERE`,
@@ -58,15 +58,15 @@ export async function generateAudioTTS(text: string) {
   )
     throw Error();
 
-  const inlineData = response.candidates?.[0].content.parts?.[0]?.inlineData;
-  let fileExtension = mime.getExtension(inlineData.mimeType || "");
-  let buffer = Buffer.from(inlineData.data || "", "base64");
-  if (!fileExtension) {
-    fileExtension = "wav";
-    buffer = convertToWav(inlineData.data || "", inlineData.mimeType || "");
-  }
-  const fileName = `audio_${Math.random()}`;
-  saveBinaryFile(`${fileName}.${fileExtension}`, buffer);
+  // const inlineData = response.candidates?.[0].content.parts?.[0]?.inlineData;
+  // let fileExtension = mime.getExtension(inlineData.mimeType || "");
+  // let buffer = Buffer.from(inlineData.data || "", "base64");
+  // if (!fileExtension) {
+  //   fileExtension = "wav";
+  //   buffer = convertToWav(inlineData.data || "", inlineData.mimeType || "");
+  // }
+  // const fileName = `audio_${Math.random()}`;
+  // saveBinaryFile(`${fileName}.${fileExtension}`, buffer);
   return response;
   //   let fileIndex = 0;
   //   for await (const chunk of response) {
@@ -96,7 +96,7 @@ interface WavConversionOptions {
   bitsPerSample: number;
 }
 
-function convertToWav(rawData: string, mimeType: string) {
+export function convertToWav(rawData: string, mimeType: string) {
   const options = parseMimeType(mimeType);
   const wavHeader = createWavHeader(rawData.length, options);
   const buffer = Buffer.from(rawData, "base64");

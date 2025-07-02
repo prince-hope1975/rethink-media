@@ -11,7 +11,9 @@ export const tone = z.enum([
   "Luxury",
   "Tech-savvy",
   "Friendly",
-]);export const z_generateContentInterface = z.object({
+]);
+export const z_generateContentInterface = z.object({
+  chatID: z.number().optional(),
   prompt: z.string().min(1, "Prompt is required"),
   tone: tone,
   imageStyle: z.string().min(1, "Image style is required"),
@@ -27,5 +29,6 @@ export const z_contentResponse = z.object({
     imagePrompt: z.string(),
   }),
   chatId: z.number(),
+  imageIndex: z.number(),
+  audioIndex: z.number(),
 });
-

@@ -1,26 +1,39 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card"
-import { Button } from "~/components/ui/button"
-import { Badge } from "~/components/ui/badge"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs"
-import { FileText, ImageIcon, Volume2, Download, Copy, Edit, Loader2, RefreshCw } from "lucide-react"
-import { ContentEditor } from "~/components/content-editor"
+import { useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { Button } from "~/components/ui/button";
+import { Badge } from "~/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
+import {
+  FileText,
+  ImageIcon,
+  Volume2,
+  Download,
+  Copy,
+  Edit,
+  Loader2,
+  RefreshCw,
+} from "lucide-react";
+import { ContentEditor } from "~/components/content-editor";
 
 interface GeneratedContentProps {
   content: {
-    headline?: string
-    caption?: string
-    imageUrl?: string
-    audioUrl?: string
-  }
-  isGenerating: boolean
-  onContentUpdate: (content: any) => void
-  originalPrompt: string
-  tone: string
-  imageStyle: string
-  voiceStyle: string
+    headline?: string;
+    caption?: string;
+    imageUrl?: string;
+    audioUrl?: string;
+  };
+  isGenerating: boolean;
+  onContentUpdate: (content: any) => void;
+  contentsStatus: {
+    imageStatus: "idle" | "pending" | "error" | "timeout";
+    audioLoading: "idle" | "pending" | "error" | "timeout";
+  };
+  originalPrompt: string;
+  tone: string;
+  imageStyle: string;
+  voiceStyle: string;
 }
 
 export function GeneratedContent({
@@ -31,27 +44,30 @@ export function GeneratedContent({
   tone,
   imageStyle,
   voiceStyle,
+  contentsStatus,
 }: GeneratedContentProps) {
-  const [editingContent, setEditingContent] = useState<string | null>(null)
-  const [regeneratingContent, setRegeneratingContent] = useState<string | null>(null)
+  const [editingContent, setEditingContent] = useState<string | null>(null);
+  const [regeneratingContent, setRegeneratingContent] = useState<string | null>(
+    null,
+  );
 
-  const hasContent = Object.keys(content).length > 0
+  const hasContent = Object.keys(content).length > 0;
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-  }
+    navigator.clipboard.writeText(text);
+  };
 
   const downloadContent = (url: string, filename: string) => {
-    const a = document.createElement("a")
-    a.href = url
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-  }
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
   const regenerateContent = async (type: string) => {
-    setRegeneratingContent(type)
+    setRegeneratingContent(type);
 
     try {
       const response = await fetch("/api/regenerate-content", {
@@ -65,29 +81,33 @@ export function GeneratedContent({
           voiceStyle,
           currentContent: content,
         }),
-      })
+      });
 
-      const data = await response.json()
-      onContentUpdate({ ...content, ...data })
+      const data = await response.json();
+      onContentUpdate({ ...content, ...data });
     } catch (error) {
-      console.error("Regeneration failed:", error)
+      console.error("Regeneration failed:", error);
     } finally {
-      setRegeneratingContent(null)
+      setRegeneratingContent(null);
     }
-  }
+  };
 
   if (!hasContent && !isGenerating) {
     return (
       <Card className="h-fit">
         <CardContent className="p-12 text-center">
-          <div className="text-gray-400 mb-4">
-            <Loader2 className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <div className="mb-4 text-gray-400">
+            <Loader2 className="mx-auto mb-4 h-12 w-12 opacity-50" />
           </div>
-          <h3 className="text-lg font-medium text-gray-600 mb-2">Ready to Generate</h3>
-          <p className="text-gray-500">Enter your prompt and click generate to create amazing content</p>
+          <h3 className="mb-2 text-lg font-medium text-gray-600">
+            Ready to Generate
+          </h3>
+          <p className="text-gray-500">
+            Enter your prompt and click generate to create amazing content
+          </p>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -122,7 +142,7 @@ export function GeneratedContent({
           <TabsContent value="text" className="space-y-4">
             {isGenerating && !content.headline ? (
               <div className="flex items-center justify-center p-8">
-                <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                <Loader2 className="mr-2 h-6 w-6 animate-spin" />
                 <span>Generating headline and caption...</span>
               </div>
             ) : (
@@ -132,7 +152,11 @@ export function GeneratedContent({
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium">Marketing Headline</h4>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => setEditingContent("headline")}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditingContent("headline")}
+                      >
                         <Edit className="h-3 w-3" />
                       </Button>
                       <Button
@@ -147,13 +171,17 @@ export function GeneratedContent({
                           <RefreshCw className="h-3 w-3" />
                         )}
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => copyToClipboard(content.headline || "")}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(content.headline || "")}
+                      >
                         <Copy className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
-                  <div className="p-3 bg-gray-50 rounded-lg">
-                    <p className="font-semibold text-lg">{content.headline}</p>
+                  <div className="rounded-lg bg-gray-50 p-3">
+                    <p className="text-lg font-semibold">{content.headline}</p>
                   </div>
                 </div>
 
@@ -162,7 +190,11 @@ export function GeneratedContent({
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium">Marketing Caption</h4>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => setEditingContent("caption")}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditingContent("caption")}
+                      >
                         <Edit className="h-3 w-3" />
                       </Button>
                       <Button
@@ -177,12 +209,16 @@ export function GeneratedContent({
                           <RefreshCw className="h-3 w-3" />
                         )}
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => copyToClipboard(content.caption || "")}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => copyToClipboard(content.caption || "")}
+                      >
                         <Copy className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
-                  <div className="p-3 bg-gray-50 rounded-lg">
+                  <div className="rounded-lg bg-gray-50 p-3">
                     <p>{content.caption}</p>
                   </div>
                 </div>
@@ -191,9 +227,11 @@ export function GeneratedContent({
           </TabsContent>
 
           <TabsContent value="image" className="space-y-4">
-            {isGenerating && !content.imageUrl ? (
+            {isGenerating &&
+            !content.imageUrl &&
+            contentsStatus.imageStatus !== "timeout" ? (
               <div className="flex items-center justify-center p-8">
-                <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                <Loader2 className="mr-2 h-6 w-6 animate-spin" />
                 <span>Generating image...</span>
               </div>
             ) : content.imageUrl ? (
@@ -216,26 +254,41 @@ export function GeneratedContent({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => downloadContent(content.imageUrl!, "generated-image.png")}
+                      onClick={() =>
+                        downloadContent(
+                          content.imageUrl!,
+                          "generated-image.png",
+                        )
+                      }
                     >
                       <Download className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
-                <div className="rounded-lg overflow-hidden border">
-                  <img src={content.imageUrl || "/placeholder.svg"} alt="Generated content" className="w-full h-auto" />
+                <div className="overflow-hidden rounded-lg border">
+                  <img
+                    src={content.imageUrl || "/placeholder.svg"}
+                    alt="Generated content"
+                    className="h-auto w-full"
+                  />
                 </div>
                 <Badge variant="outline" className="text-xs">
                   Style: {imageStyle}
                 </Badge>
               </div>
+            ) : contentsStatus.imageStatus === "timeout" ? (
+              <div className="flex items-center justify-center p-8">
+                <span>Image generation timed out. Please try again.</span>
+              </div>
             ) : null}
           </TabsContent>
 
           <TabsContent value="audio" className="space-y-4">
-            {isGenerating && !content.audioUrl ? (
+            {isGenerating &&
+            !content.audioUrl &&
+            contentsStatus.audioLoading !== "timeout" ? (
               <div className="flex items-center justify-center p-8">
-                <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                <Loader2 className="mr-2 h-6 w-6 animate-spin" />
                 <span>Generating audio...</span>
               </div>
             ) : content.audioUrl ? (
@@ -258,13 +311,18 @@ export function GeneratedContent({
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => downloadContent(content.audioUrl!, "generated-audio.mp3")}
+                      onClick={() =>
+                        downloadContent(
+                          content.audioUrl!,
+                          "generated-audio.mp3",
+                        )
+                      }
                     >
                       <Download className="h-3 w-3" />
                     </Button>
                   </div>
                 </div>
-                <div className="p-4 bg-gray-50 rounded-lg">
+                <div className="rounded-lg bg-gray-50 p-4">
                   <audio controls className="w-full">
                     <source src={content.audioUrl} type="audio/mpeg" />
                     Your browser does not support the audio element.
@@ -274,6 +332,10 @@ export function GeneratedContent({
                   Voice: {voiceStyle}
                 </Badge>
               </div>
+            ) : contentsStatus.audioLoading === "timeout" ? (
+              <div className="flex items-center justify-center p-8">
+                <span>Audio generation timed out. Please try again.</span>
+              </div>
             ) : null}
           </TabsContent>
         </Tabs>
@@ -281,18 +343,20 @@ export function GeneratedContent({
         {editingContent && (
           <ContentEditor
             type={editingContent}
-            currentContent={content[editingContent as keyof typeof content] || ""}
+            currentContent={
+              content[editingContent as keyof typeof content] || ""
+            }
             onSave={(newContent) => {
               onContentUpdate({
                 ...content,
                 [editingContent]: newContent,
-              })
-              setEditingContent(null)
+              });
+              setEditingContent(null);
             }}
             onCancel={() => setEditingContent(null)}
           />
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

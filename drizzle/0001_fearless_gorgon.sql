@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "media_chat_type_index_unique" ON "rethink-media_media" USING btree ("chatId","media_type","index");

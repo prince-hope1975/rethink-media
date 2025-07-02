@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -17,12 +17,29 @@ import { Badge } from "~/components/ui/badge";
 import { Wand2, Loader2 } from "lucide-react";
 import { FileUpload } from "~/components/file-upload";
 import { GeneratedContent } from "~/components/generated-content";
-import { z_generateContentInterface } from "~/ai/validation";
+import { z_contentResponse, z_generateContentInterface } from "~/ai/validation";
 import axios from "axios";
-import SWal from "sweetalert2";
+import Swal from "sweetalert";
+import { z } from "zod";
+import { useRouter } from "next/navigation";
+import { api } from "~/trpc/react";
+
+const predefinedTones = [
+  "Playful",
+  "Serious",
+  "Bold",
+  "Professional",
+  "Casual",
+  "Enthusiastic",
+  "Minimalist",
+  "Luxury",
+  "Tech-savvy",
+  "Friendly",
+];
+
 export default function Home() {
   const [prompt, setPrompt] = useState("");
-  const [tone, setTone] = useState("random");
+  const [tone, setTone] = useState(predefinedTones[4]);
   const [customTone, setCustomTone] = useState("");
   const [imageStyle, setImageStyle] = useState("realistic");
   const [voiceStyle, setVoiceStyle] = useState("professional");
@@ -35,18 +52,16 @@ export default function Home() {
     audioUrl?: string;
   }>({});
 
-  const predefinedTones = [
-    "Playful",
-    "Serious",
-    "Bold",
-    "Professional",
-    "Casual",
-    "Enthusiastic",
-    "Minimalist",
-    "Luxury",
-    "Tech-savvy",
-    "Friendly",
-  ];
+  console.log({ generatedContent });
+
+  const [imageStatus, setImageStatus] = useState<
+    "idle" | "pending" | "error" | "timeout"
+  >("idle");
+  const [audioLoading, setAudioLoading] = useState<
+    "idle" | "pending" | "error" | "timeout"
+  >("idle");
+
+  const router = useRouter();
 
   const imageStyles = [
     { value: "realistic", label: "Realistic" },
@@ -96,6 +111,33 @@ export default function Home() {
     }
   };
 
+  const { mutateAsync: fetchStatus, reset } = api.chat.getStatus.useMutation({
+    onMutate(variables) {
+      if (variables?.mediaType === "image") {
+        setImageStatus("pending");
+      }
+      if (variables?.mediaType === "audio") {
+        setAudioLoading("pending");
+      }
+    },
+    onSuccess(variables) {
+      if (variables?.type === "image" && variables?.status === "completed") {
+        setImageStatus("idle");
+      }
+      if (variables?.type === "audio" && variables?.status === "completed") {
+        setAudioLoading("idle");
+      }
+    },
+    onError(error, variables, context) {
+      if (variables?.mediaType === "image") {
+        setImageStatus("error");
+      }
+      if (variables?.mediaType === "audio") {
+        setAudioLoading("error");
+      }
+    },
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50">
       <div className="mx-p container px-4 py-8">
@@ -111,7 +153,10 @@ export default function Home() {
         <div className="grid gap-8 lg:grid-cols-2">
           {/* Input Section */}
           <form
-            onSubmit={async () => {
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setIsGenerating(true);
+
               try {
                 const data = await axios.post(
                   "/api/generate-content",
@@ -122,7 +167,72 @@ export default function Home() {
                     voiceStyle,
                   }),
                 );
-                SWal.fire({
+
+                const contentResponse = z_contentResponse.parse(data.data);
+
+                // Iniitalize chatId if not present
+                router.replace(`?chatId=${contentResponse?.chatId}`);
+                setGeneratedContent((prev) => ({
+                  ...prev,
+                  headline: contentResponse.result.headline,
+                  caption: contentResponse.result.caption,
+                }));
+
+                const startTime = Date.now(); // Track polling start time
+                while (
+                  (!generatedContent.imageUrl || !generatedContent.audioUrl) &&
+                  Date.now() - startTime < 60000 // 60 seconds
+                ) {
+                  reset();
+                  // Wait for a short period before checking status again
+                  await new Promise((resolve) => setTimeout(resolve, 5000));
+
+                  // Run this path only if imageUrl has not been set
+                  if (!generatedContent.imageUrl) {
+                    const response = await fetchStatus({
+                      chatID: contentResponse.chatId,
+                      mediaID: contentResponse.imageIndex,
+                      mediaType: "image",
+                    });
+
+                    console.log({
+                      status: response,
+                    });
+                    if (response?.status === "completed") {
+                      setGeneratedContent((prev) => ({
+                        ...prev,
+                        imageUrl: response.url,
+                      }));
+                    }
+                  }
+
+                  // Run this path only if audio has not been set
+                  if (!generatedContent.audioUrl) {
+                    const response = await fetchStatus({
+                      chatID: contentResponse.chatId,
+                      mediaID: contentResponse.imageIndex,
+                      mediaType: "audio",
+                    });
+                    console.log({
+                      status: response,
+                    });
+                    if (response?.status === "completed") {
+                      setGeneratedContent((prev) => ({
+                        ...prev,
+                        audioUrl: response?.url,
+                      }));
+                    }
+                  }
+                }
+                // After loop, if timeout occurred, set missing fields to 'timeout'
+                if (!generatedContent.imageUrl) {
+                  setImageStatus("timeout");
+                }
+                if (!generatedContent.audioUrl) {
+                  setAudioLoading("timeout");
+                }
+
+                Swal({
                   icon: "success",
                   title: "Content Generated Successfully",
                   text: "Your content has been generated and is ready for review.",
@@ -131,21 +241,43 @@ export default function Home() {
                 console.log({ content: data?.data });
               } catch (err) {
                 console.error("Error generating content", err);
-                SWal.fire({
+                Swal({
                   icon: "error",
                   title: "Content Generation Failed",
                   text: "Please check your input and try again.",
                 });
+              } finally {
+                setIsGenerating(false);
               }
             }}
             className=""
           >
             <Card className="h-fit">
-              <CardHeader>
+              <CardHeader className="flex flex-row justify-between gap-2">
                 <CardTitle className="flex items-center gap-2">
                   <Wand2 className="h-5 w-5" />
                   Content Configuration
                 </CardTitle>
+                <Button
+                  type="submit"
+                  // Uncomment the line below to enable the button click handler
+                  // onClick={handleGenerate}
+                  disabled={!prompt.trim() || isGenerating}
+                  className="w-min cursor-pointer rounded px-2"
+                  size="lg"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Generating Content...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="h-4 w-4" />
+                      Generate Content
+                    </>
+                  )}
+                </Button>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Prompt Input */}
@@ -230,7 +362,9 @@ export default function Home() {
                 </div>
                 {/* Generate Button */}
                 <Button
-                  onClick={handleGenerate}
+                  type="submit"
+                  // Uncomment the line below to enable the button click handler
+                  // onClick={handleGenerate}
                   disabled={!prompt.trim() || isGenerating}
                   className="w-full"
                   size="lg"
@@ -256,6 +390,10 @@ export default function Home() {
             content={generatedContent}
             isGenerating={isGenerating}
             onContentUpdate={setGeneratedContent}
+            contentsStatus={{
+              imageStatus,
+              audioLoading,
+            }}
             originalPrompt={prompt}
             tone={tone === "custom" ? customTone : tone}
             imageStyle={imageStyle}
