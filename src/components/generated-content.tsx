@@ -26,8 +26,15 @@ import {
 } from "~/components/ui/dialog";
 import { Textarea } from "~/components/ui/textarea";
 import { api } from "~/trpc/react";
-import { util } from "zod";
 import moment from "moment";
+import axios from "axios";
+import {
+  z_generateAudioInterface,
+  z_generateContentInterface,
+} from "~/ai/validation";
+import { useAtom } from "jotai";
+import { audioTypeAtom } from "~/ai/jotaiAtoms";
+import { useToast } from "~/app/hooks/use-toast";
 
 interface GeneratedContentProps {
   content: {
@@ -174,25 +181,59 @@ export function GeneratedContent({
     if (type === "audio") return content.audioPrompt || originalPrompt;
     return originalPrompt;
   };
+  const [audioType, setAudioType] = useAtom<"voice" | "jingle">(audioTypeAtom);
 
   const updatePromptForItem = async (
     type: "headline" | "caption" | "media" | "audio" | "image" | "video",
     id: string | number | undefined,
     value: string,
   ) => {
+    const routes = {
+      audio: "/api/regenerate-content/audio",
+      video: "/api/regenerate-content/media",
+      image: "/api/regenerate-content/media",
+      media: "/api/regenerate-content/media",
+      caption: "/api/regenerate-content/text",
+      headline: "/api/regenerate-content/text",
+    };
+    const data = await axios.post(
+      routes[type],
+      z_generateContentInterface
+        .pick({
+          audioType: type == "audio" ? true : undefined,
+          mediaType:
+            type == "media" || type == "video" || type == "image"
+              ? true
+              : undefined,
+          chatID: true,
+          prompt: true,
+        })
+        .parse({
+          prompt: value,
+          chatID: +chatId!,
+          audioType: type == "audio" ? audioType : undefined,
+          mediaType: type,
+        }),
+    );
     if (type === "headline" || type === "caption") {
-      onContentUpdate({
-        ...content,
-        [type + "Prompt"]: value,
-      });
-      await regenerateContent(type);
+      // onContentUpdate({
+      //   ...content,
+      //   [type + "Prompt"]: value,
+      // });
+      // await regenerateContent(type);
       return;
     }
-    onContentUpdate({
-      ...content,
-      [`${type}Prompt`]: value,
-    });
-    await regenerateContent(type);
+    // setR((prev) => ({
+    //   ...prev,
+    //   headline: contentResponse.result.headline,
+    //   caption: contentResponse.result.caption,
+    // }));
+
+    console.log("After invalidation");
+    for (let i = 0; i < 3; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+      await utils.chat.invalidate();
+    }
   };
 
   const latestAudio = api.chat.getLatestAudios.useQuery(
@@ -249,7 +290,8 @@ export function GeneratedContent({
       },
     },
   );
-  // const utils = api.useUtils();
+  const utils = api.useUtils();
+  const { toast } = useToast();
 
   // useEffect(() => {
   //   const latestAudioStatus = latestAudio.data?.at(0)?.status;
@@ -395,13 +437,22 @@ export function GeneratedContent({
                     </Button>
                     <Button
                       onClick={async () => {
-                        if (openPromptDialog)
-                          await updatePromptForItem(
-                            openPromptDialog.type,
-                            openPromptDialog.id ?? undefined,
-                            openPromptDialog.value,
-                          );
-                        setOpenPromptDialog(null);
+                        if (openPromptDialog) {
+                          try {
+                            await updatePromptForItem(
+                              openPromptDialog.type,
+                              openPromptDialog.id ?? undefined,
+                              openPromptDialog.value,
+                            );
+                            setOpenPromptDialog(null);
+                          } catch (err) {
+                            toast({
+                              title: "Error updating prompt",
+                              description: err instanceof Error ? err.message : "An error occurred while updating the prompt.",
+                              variant: "destructive",
+                            });
+                          }
+                        }
                       }}
                     >
                       Save
@@ -614,13 +665,22 @@ export function GeneratedContent({
                     </Button>
                     <Button
                       onClick={async () => {
-                        if (openPromptDialog)
-                          await updatePromptForItem(
-                            openPromptDialog.type,
-                            openPromptDialog.id ?? undefined,
-                            openPromptDialog.value,
-                          );
-                        setOpenPromptDialog(null);
+                        if (openPromptDialog) {
+                          try {
+                            await updatePromptForItem(
+                              openPromptDialog.type,
+                              openPromptDialog.id ?? undefined,
+                              openPromptDialog.value,
+                            );
+                            setOpenPromptDialog(null);
+                          } catch (err) {
+                            toast({
+                              title: "Error updating prompt",
+                              description: err instanceof Error ? err.message : "An error occurred while updating the prompt.",
+                              variant: "destructive",
+                            });
+                          }
+                        }
                       }}
                     >
                       Save
@@ -708,8 +768,7 @@ export function GeneratedContent({
                   >
                     <div className="flex items-center justify-between">
                       <h4 className="bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-xl font-semibold text-transparent">
-                        {idx == 0 ? "New Generated" : ""}{" "}
-                        {data?.type === "video" ? "Video" : "Image"}
+                        {idx == 0 ? "New Generated" : ""} {data?.type === "video" ? "Video" : "Image"}
                       </h4>
                       <div className="flex items-center gap-1">
                         {time && (
@@ -799,13 +858,22 @@ export function GeneratedContent({
                     </Button>
                     <Button
                       onClick={async () => {
-                        if (openPromptDialog)
-                          updatePromptForItem(
-                            "audio",
-                            null,
-                            openPromptDialog.value,
-                          );
-                        setOpenPromptDialog(null);
+                        if (openPromptDialog) {
+                          try {
+                            await updatePromptForItem(
+                              "audio",
+                              chatId,
+                              openPromptDialog.value,
+                            );
+                            setOpenPromptDialog(null);
+                          } catch (err) {
+                            toast({
+                              title: "Error updating prompt",
+                              description: err instanceof Error ? err.message : "An error occurred while updating the prompt.",
+                              variant: "destructive",
+                            });
+                          }
+                        }
                       }}
                     >
                       Save

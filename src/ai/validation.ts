@@ -12,6 +12,14 @@ export const tone = z.enum([
   "Tech-savvy",
   "Friendly",
 ]);
+export const z_generateAudioInterface = z.object({
+  chatID: z.number(),
+  parentID: z.number().optional(),
+  prompt: z.string().min(1, "Prompt is required"),
+  voiceStyle: z.string().optional(),
+  audioType: z.enum(["voice", "jingle"]).default("voice"),
+  contentLengthInSeconds: z.number().optional().default(5),
+});
 export const z_generateContentInterface = z.object({
   chatID: z.number().optional(),
   prompt: z.string().min(1, "Prompt is required"),

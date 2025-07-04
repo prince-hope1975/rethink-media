@@ -35,7 +35,7 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { useAtom } from "jotai";
-import { audioDataAtom, imageDataAtom, videoDataAtom } from "~/ai/jotaiAtoms";
+import { audioDataAtom, audioTypeAtom, imageDataAtom, videoDataAtom } from "~/ai/jotaiAtoms";
 
 const predefinedTones = [
   "Playful",
@@ -49,6 +49,7 @@ const predefinedTones = [
   "Tech-savvy",
   "Friendly",
 ];
+
 export default function Home() {
   const [prompt, setPrompt] = useState("");
   const [tone, setTone] = useState(predefinedTones[4]);
@@ -94,7 +95,7 @@ export default function Home() {
   ];
 
   const [mediaType, setMediaType] = useState<"image" | "video">("image");
-  const [audioType, setAudioType] = useState<"voice" | "jingle">("voice");
+  const [audioType, setAudioType] = useAtom<"voice" | "jingle">(audioTypeAtom);
   const searchParams = useSearchParams();
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
@@ -215,9 +216,24 @@ export default function Home() {
     }, 5000);
   }, ["aaahsssssss"]);
 
+  const handleNewChat = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("chatId");
+    router.replace(url.pathname);
+    router.refresh();
+  };
+
   return (
     <div className="min-h-screen">
       <div className="mx-p container px-4 py-8">
+        <div className="mb-4 flex justify-end">
+          <Button
+            variant="outline"
+            onClick={handleNewChat}
+          >
+            New Chat
+          </Button>
+        </div>
         <div className="animate-in fade-in slide-in-from-top-4 mb-8 text-center duration-1000">
           <h1 className="mb-2 bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-5xl font-extrabold text-transparent drop-shadow-lg">
             Multimodal Content Generator
