@@ -1,0 +1,2 @@
+ALTER TABLE "rethink-media_media" ADD COLUMN "parentId" integer;--> statement-breakpoint
+ALTER TABLE "rethink-media_media" ADD CONSTRAINT "media_parent_id_fk" FOREIGN KEY ("parentId") REFERENCES "public"."rethink-media_media"("id") ON DELETE no action ON UPDATE no action;

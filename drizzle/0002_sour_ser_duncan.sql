@@ -1,0 +1,1 @@
+ALTER TABLE "rethink-media_media" ADD COLUMN "prompt" text;

@@ -213,7 +213,7 @@ export default function Home() {
             onContentUpdate={setGeneratedContent}
             originalPrompt={prompt}
             tone={tone === "custom" ? customTone : tone}
-            imageStyle={imageStyle}
+            mediaStyle={imageStyle}
             voiceStyle={voiceStyle}
           />
         </div>

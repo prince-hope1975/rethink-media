@@ -54,22 +54,20 @@ export function FileUpload({ files, onFilesChange }: FileUploadProps) {
 
   return (
     <div className="space-y-3">
-      <label className="text-sm font-medium">Reference Files (Optional)</label>
+      <label className="text-lg font-semibold ">Reference Files (Optional)</label>
 
       <Card
-        className={`border-2 border-dashed transition-colors cursor-pointer ${
-          dragActive ? "border-primary bg-primary/5" : "border-gray-300 hover:border-gray-400"
-        }`}
+        className={`border-2 border-dashed rounded-lg transition-all duration-300 ease-out p-6 text-center shadow-sm ${dragActive ? "border-blue-500 bg-blue-50 ring-4 ring-blue-200" : "border-gray-300 hover:border-blue-400 hover:bg-gray-50"}`}
         onDragEnter={handleDrag}
         onDragLeave={handleDrag}
         onDragOver={handleDrag}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
       >
-        <CardContent className="p-6 text-center">
-          <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-          <p className="text-sm text-gray-600 mb-1">Drop images or PDFs here, or click to browse</p>
-          <p className="text-xs text-gray-400">Max 10MB per file</p>
+        <CardContent className="p-0">
+          <Upload className="mx-auto h-10 w-10 text-blue-400 mb-2 animate-bounce-slow" />
+          <p className="text-base text-gray-700 mb-1 font-medium">Drag & drop your files here, or <span className="text-blue-500 font-semibold cursor-pointer">click to browse</span></p>
+          <p className="text-sm text-gray-500">Supported: Images, PDFs. Max 10MB per file.</p>
         </CardContent>
       </Card>
 
@@ -83,21 +81,21 @@ export function FileUpload({ files, onFilesChange }: FileUploadProps) {
       />
 
       {files.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-3 mt-4 animate-in fade-in slide-in-from-top-2">
           {files.map((file, index) => (
-            <Badge key={index} variant="secondary" className="flex items-center gap-1 pr-1">
-              {file.type.startsWith("image/") ? <ImageIcon className="h-3 w-3" /> : <FileText className="h-3 w-3" />}
-              <span className="text-xs truncate max-w-[100px]">{file.name}</span>
+            <Badge key={index} variant="secondary" className="flex items-center gap-2 pr-2 py-2 text-base rounded-full bg-blue-100 text-blue-800 shadow-sm">
+              {file.type.startsWith("image/") ? <ImageIcon className="h-4 w-4 text-blue-600" /> : <FileText className="h-4 w-4 text-blue-600" />}
+              <span className="text-sm font-medium truncate max-w-[120px]">{file.name}</span>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-4 w-4 p-0 hover:bg-destructive hover:text-destructive-foreground"
+                className="h-5 w-5 p-0 text-blue-600 hover:bg-blue-200 hover:text-red-600 rounded-full transition-all duration-200"
                 onClick={(e) => {
                   e.stopPropagation()
                   removeFile(index)
                 }}
               >
-                <X className="h-3 w-3" />
+                <X className="h-4 w-4" />
               </Button>
             </Badge>
           ))}

@@ -2,7 +2,7 @@
 // https://orm.drizzle.team/docs/sql-schema-declaration
 
 import { sql } from "drizzle-orm";
-import { index, pgEnum, pgTableCreator, uniqueIndex } from "drizzle-orm/pg-core";
+import { index, pgEnum, pgTableCreator, uniqueIndex, foreignKey } from "drizzle-orm/pg-core";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -32,7 +32,7 @@ export const mediaStatus = pgEnum("media_status", [
   "completed",
   "failed",
 ]);
-export const mediaType = pgEnum("media_type", ["image", "video", "audio"]);
+export const mediaType = pgEnum("media_type", ["image", "video", "audio","text"]);
 
 export const media = createTable(
   "media",
@@ -44,16 +44,23 @@ export const media = createTable(
       .references(() => chat.id),
     type: mediaType("media_type").notNull(),
     index: d.integer().notNull(),
-    url: d.varchar({ length: 512 }).notNull(), // Example field for media location
+    content_or_url: d.varchar({ length: 512 }).notNull(), // Example field for media location
     createdAt: d
       .timestamp({ withTimezone: true })
       .default(sql`CURRENT_TIMESTAMP`)
       .notNull(),
     updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
     status: mediaStatus("media_status").default("pending").notNull(),
+    prompt: d.text("prompt"),
+    parentId: d.integer(),
   }),
   (t) => [
     index("media_chat_type_index_idx").on(t.chatId, t.type, t.index),
-    uniqueIndex("media_chat_type_index_unique").on(t.chatId, t.type, t.index), // <-- add this line
+    uniqueIndex("media_chat_type_index_unique").on(t.chatId, t.type, t.index),
+    foreignKey({
+      columns: [t.parentId],
+      foreignColumns: [t.id],
+      name: "media_parent_id_fk"
+    }),
   ],
 );
