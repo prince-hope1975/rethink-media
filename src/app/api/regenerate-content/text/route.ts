@@ -55,4 +55,5 @@ export async function POST(request: NextRequest) {
 }
 
 // Import the helper from the main generate-content route
-import { storeHeadlineAndCaption } from "../../generate-content/route"; 
+import { storeHeadlineAndCaption } from "../../helpers/storeHeadlineAndCaption";
+ 

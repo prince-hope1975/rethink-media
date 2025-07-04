@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import moment from "moment";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
@@ -35,7 +35,12 @@ import {
   TooltipTrigger,
 } from "~/components/ui/tooltip";
 import { useAtom } from "jotai";
-import { audioDataAtom, audioTypeAtom, imageDataAtom, videoDataAtom } from "~/ai/jotaiAtoms";
+import {
+  audioDataAtom,
+  audioTypeAtom,
+  imageDataAtom,
+  videoDataAtom,
+} from "~/ai/jotaiAtoms";
 
 const predefinedTones = [
   "Playful",
@@ -51,6 +56,14 @@ const predefinedTones = [
 ];
 
 export default function Home() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <HomeWithSearchParams />
+    </Suspense>
+  );
+}
+
+function HomeWithSearchParams() {
   const [prompt, setPrompt] = useState("");
   const [tone, setTone] = useState(predefinedTones[4]);
   const [customTone, setCustomTone] = useState("");
@@ -227,10 +240,7 @@ export default function Home() {
     <div className="min-h-screen">
       <div className="mx-p container px-4 py-8">
         <div className="mb-4 flex justify-end">
-          <Button
-            variant="outline"
-            onClick={handleNewChat}
-          >
+          <Button variant="outline" onClick={handleNewChat}>
             New Chat
           </Button>
         </div>
@@ -339,8 +349,6 @@ export default function Home() {
                 // if (!generatedContent.audioUrl) {
                 //   setAudioLoading("timeout");
                 // }
-
-              
 
                 console.log({ content: data?.data });
               } catch (err) {
@@ -499,8 +507,11 @@ export default function Home() {
                     {/* Audio Type Switch */}
                     <div className="mt-2 flex items-center gap-3">
                       <Label className="font-semibold">Audio Type</Label>
-                      <Select value={audioType} onValueChange={setAudioType}>
-                        <SelectTrigger className="border-gray-300 w-32 transition-all duration-300 ease-out focus:border-blue-400 focus:ring-blue-400">
+                      <Select
+                        value={audioType}
+                        onValueChange={(res) => setAudioType(res as any)}
+                      >
+                        <SelectTrigger className="w-32 border-gray-300 transition-all duration-300 ease-out focus:border-blue-400 focus:ring-blue-400">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

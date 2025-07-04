@@ -4,7 +4,6 @@ import { put } from "@vercel/blob";
 import mime from "mime";
 
 import {
-  z_headline_and_caption,
   z_contentResponse,
   z_generateAudioInterface,
 } from "~/ai/validation";
@@ -98,16 +97,10 @@ interface GenerateAndStoreAudioParams {
   dataBaseID: number;
   lastAudioIndex: any;
 }
-interface StoreHeadlineAndCaptionParams {
-  content: { headline: string; caption: string };
-  dataBaseID: number;
-  lastTextIndex: {
-    index: number;
-  }[];
-}
+
 
 // Standalone function for video generation and storage
-export const generateAndStoreVideo = async ({
+ const generateAndStoreVideo = async ({
   content,
   dataBaseID,
   lastImageIndex,
@@ -192,7 +185,7 @@ export const generateAndStoreVideo = async ({
   }
 };
 // Standalone function for image generation and storage
-export const generateAndStoreImage = async ({
+ const generateAndStoreImage = async ({
   content,
   dataBaseID,
   lastImageIndex,
@@ -281,7 +274,7 @@ export const generateAndStoreImage = async ({
 };
 
 // Standalone function for audio generation and storage
-export const generateAndStoreAudioVoice = async ({
+ const generateAndStoreAudioVoice = async ({
   content,
   dataBaseID,
   lastAudioIndex,
@@ -371,7 +364,7 @@ export const generateAndStoreAudioVoice = async ({
   }
 };
 // Standalone function for video generation and storage
-export const generateAndStoreAudioJingle = async ({
+ const generateAndStoreAudioJingle = async ({
   content,
   dataBaseID,
   lastAudioIndex,
@@ -458,39 +451,4 @@ export const generateAndStoreAudioJingle = async ({
   }
 };
 
-export const storeHeadlineAndCaption = async ({
-  content,
-  dataBaseID,
-  lastTextIndex,
-}: StoreHeadlineAndCaptionParams) => {
-  try {
-    await db.insert(media).values({
-      chatId: dataBaseID,
-      index: (lastTextIndex.at(0)?.index ?? 0) + 1,
-      type: "text",
-      status: "completed",
-      content_or_url: JSON.stringify(
-        z_headline_and_caption.parse({
-          caption: content?.caption,
-          headline: content?.headline,
-        } as typeof z_headline_and_caption._type),
-      ),
-    });
-    console.log("This path");
-  } catch (error) {
-    console.log("failed insertion", { error });
-    await db.insert(media).values({
-      chatId: dataBaseID,
-      index: (lastTextIndex.at(0)?.index ?? 0) + 1,
-      type: "text",
-      status: "failed",
-      content_or_url: JSON.stringify(
-        z_headline_and_caption.parse({
-          caption: content?.caption,
-          headline: content?.headline,
-        } as typeof z_headline_and_caption._type),
-      ),
-    });
-    throw error;
-  }
-};
+

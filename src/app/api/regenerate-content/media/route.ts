@@ -7,11 +7,13 @@ import { media } from "~/server/db/schema";
 import { db } from "~/server/db";
 import { and, desc, eq } from "drizzle-orm";
 
-import {
-  generateAndStoreVideo,
-  generateAndStoreImage,
-} from "../../generate-content/route";
-
+// import {
+//   // ,
+//   generateAndStoreImage,
+// } from "../../generate-content/route";
+import { generateAndStoreVideo } from "../../helpers/generateAndStoreVideo";
+import { generateAndStoreImage } from "../../helpers/generateAndStoreImage";
+// generateAndStoreVideo
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 export async function POST(request: NextRequest) {
