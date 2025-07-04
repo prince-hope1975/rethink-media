@@ -600,3 +600,4 @@ export interface StoreHeadlineAndCaptionParams {
 };
 
 
+export const maxDuration = 60; // 300 seconds timeout

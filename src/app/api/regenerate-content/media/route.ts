@@ -101,10 +101,4 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
-  // Implementation of GET method
-}
-
-export async function PUT(request: NextRequest) {
-  // Implementation of PUT method
-}
+export const maxDuration = 60; // 300 seconds timeout

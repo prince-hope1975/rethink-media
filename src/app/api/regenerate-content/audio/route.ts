@@ -451,4 +451,7 @@ interface GenerateAndStoreAudioParams {
   }
 };
 
+export const maxDuration = 60; // 300 seconds timeout
+
+
 
