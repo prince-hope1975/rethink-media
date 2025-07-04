@@ -252,7 +252,7 @@ export const generateAndStoreVideo = async ({
     if (!content.videoPrompt) {
       throw new Error("Image prompt is missing in the generated content");
     }
-    db.insert(media)
+    await db.insert(media)
       .values({
         chatId: dataBaseID,
         index: (lastImageIndex.at(0)?.index ?? 0) + 1,
@@ -261,7 +261,7 @@ export const generateAndStoreVideo = async ({
         content_or_url: "",
         prompt: content.videoPrompt,
       })
-      .onConflictDoNothing();
+      
     const result = await fal.subscribe("fal-ai/ltx-video", {
       input: {
         prompt: content.videoPrompt,
@@ -339,7 +339,7 @@ export const generateAndStoreImage = async ({
     if (!content.imagePrompt) {
       throw new Error("Image prompt is missing in the generated content");
     }
-    db.insert(media)
+    await db.insert(media)
       .values({
         chatId: dataBaseID,
         index: (lastImageIndex.at(0)?.index ?? 0) + 1,
@@ -348,7 +348,7 @@ export const generateAndStoreImage = async ({
         content_or_url: "",
         prompt: content.imagePrompt,
       })
-      .onConflictDoNothing();
+      
     const imgContent = await ai.models.generateImages({
       // model: " imagen-4.0-generate-preview-06-06",
       model: "models/imagen-4.0-generate-preview-06-06",
@@ -427,6 +427,17 @@ export const generateAndStoreAudio = async ({
     if (!content.audioPrompt) {
       throw new Error("Audio prompt is missing in the generated content");
     }
+    await db
+    .insert(media)
+    .values({
+      chatId: dataBaseID,
+      index: (lastAudioIndex.at(0)?.index ?? 0) + 1,
+      type: "audio",
+      // content_or_url: vercelBlob.url,
+      content_or_url: "",
+      status: "processing",
+      prompt: content.audioPrompt,
+    })
     const audioData = await generateAudioTTS(content.audioPrompt);
     console.log("Audio generation response:", audioData);
 

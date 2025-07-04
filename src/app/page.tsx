@@ -260,7 +260,7 @@ export default function Home() {
                 const startTime = Date.now(); // Track polling start time
 
                 console.log("After invalidation");
-                for (let i = 0; i < 1; i++) {
+                for (let i = 0; i < 3; i++) {
                   await new Promise((resolve) => setTimeout(resolve, 5000));
                   await utils.chat.invalidate();
                 }

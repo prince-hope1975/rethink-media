@@ -136,7 +136,16 @@ export function GeneratedContent({
 
   const latestAudio = api.chat.getLatestAudios.useQuery(
     { chatID: +chatId! },
-    { enabled: !!chatId },
+    {
+      enabled: !!chatId,
+      refetchInterval: (query) => {
+        const opt = query.state.data?.at(0);
+        if (opt?.status === "processing" || opt?.status === "pending") {
+          return 10_000;
+        }
+        return false;
+      },
+    },
   );
   console.log({
     loading: latestAudio.isLoading,
@@ -144,15 +153,45 @@ export function GeneratedContent({
   });
   const latestImage = api.chat.getLatestImages.useQuery(
     { chatID: +chatId! },
-    { enabled: !!chatId },
+    {
+      enabled: !!chatId,
+      refetchInterval: (query) => {
+        const opt = query.state.data?.at(0);
+        if (opt?.status === "processing" || opt?.status === "pending") {
+          return 10_000;
+        }
+        return false;
+      },
+    },
   );
   const latestVideo = api.chat.getLatestVideos.useQuery(
     { chatID: +chatId! },
-    { enabled: !!chatId },
+    {
+      enabled: !!chatId,
+      refetchInterval: (query) => {
+        const opt = query.state.data?.at(0);
+        if (opt?.status === "processing" || opt?.status === "pending") {
+          return 10_000;
+        }
+        return false;
+      },
+    },
   );
+  console.log({
+    video:latestVideo.data
+  })
   const latestText = api.chat.getLatestTexts.useQuery(
     { chatID: +chatId! },
-    { enabled: !!chatId },
+    {
+      enabled: !!chatId,
+      refetchInterval: (query) => {
+        const opt = query.state.data?.at(0);
+        if (opt?.status === "processing" || opt?.status === "pending") {
+          return 10_000;
+        }
+        return false;
+      },
+    },
   );
   // const utils = api.useUtils();
 
@@ -324,7 +363,8 @@ export function GeneratedContent({
                 </DialogContent>
               </Dialog>
             </div>
-            {isGenerating && !latestText?.data?.length ? (
+            {(isGenerating || latestText.isLoading || latestText.isFetching) &&
+            !latestText?.data?.length ? (
               <div className="flex flex-col items-center justify-center p-8 text-blue-500">
                 <Loader2 className="mr-2 h-8 w-8 animate-spin" />
                 <span className="mt-2 text-lg font-medium">
@@ -383,9 +423,9 @@ export function GeneratedContent({
                       <div className="space-y-2 rounded-lg border-b border-gray-200/50 p-4 shadow-sm transition-shadow duration-300 ease-out hover:shadow-md">
                         <div className="flex items-center justify-between">
                           <h4 className="font-semibold">Marketing Headline</h4>
-                          <div className="flex gap-1 items-center">
+                          <div className="flex items-center gap-1">
                             {time && (
-                              <span className="text-xs text-gray-400 mr-2">
+                              <span className="mr-2 text-xs text-gray-400">
                                 {moment(time).fromNow()}
                               </span>
                             )}
@@ -432,9 +472,9 @@ export function GeneratedContent({
                       <div className="space-y-2 rounded-lg border-b border-gray-200/50 p-4 shadow-sm transition-shadow duration-300 ease-out hover:shadow-md">
                         <div className="flex items-center justify-between">
                           <h4 className="font-semibold">Marketing Caption</h4>
-                          <div className="flex gap-1 items-center">
+                          <div className="flex items-center gap-1">
                             {time && (
-                              <span className="text-xs text-gray-400 mr-2">
+                              <span className="mr-2 text-xs text-gray-400">
                                 {moment(time).fromNow()}
                               </span>
                             )}
@@ -540,24 +580,11 @@ export function GeneratedContent({
               </Dialog>
             </div>
 
-            {/* Default loader */}
-            {latestImage.isFetching ||
-              (latestImage.isLoading || latestVideo.isFetching,
-              latestVideo.isLoading && (
-                <div className="flex flex-col items-center justify-center p-8 text-blue-500">
-                  <Loader2 className="mr-2 h-8 w-8 animate-spin" />
-                  <span className="mt-2 text-lg font-medium">
-                    Crafting your visual masterpiece...
-                  </span>
-                </div>
-              ))}
-
             {(() => {
               const mediaData = [
                 ...(latestImage?.data ?? []),
                 ...(latestVideo?.data ?? []),
               ];
-              // Sort by updatedAt or index (descending)
               mediaData.sort((a, b) => {
                 const aTime = new Date(
                   a.updatedAt || a.createdAt || 0,
@@ -568,7 +595,11 @@ export function GeneratedContent({
                 return bTime - aTime;
               });
               if (
-                isGenerating &&
+                (isGenerating ||
+                  latestImage.isLoading ||
+                  latestImage.isFetching ||
+                  latestVideo.isLoading ||
+                  latestVideo.isFetching) &&
                 !mediaData.length &&
                 contentsStatus.mediaStatus !== "timeout"
               ) {
@@ -634,9 +665,9 @@ export function GeneratedContent({
                         {idx == 0 ? "New Generated" : ""}{" "}
                         {data?.type === "video" ? "Video" : "Image"}
                       </h4>
-                      <div className="flex gap-1 items-center">
+                      <div className="flex items-center gap-1">
                         {time && (
-                          <span className="text-xs text-gray-400 mr-2">
+                          <span className="mr-2 text-xs text-gray-400">
                             {moment(time).fromNow()}
                           </span>
                         )}
@@ -749,87 +780,10 @@ export function GeneratedContent({
               </Dialog>
             </div>
 
-            {/* Default loader */}
-            {latestAudio.isFetching ||
-              (latestAudio.isLoading && (
-                <div className="flex flex-col items-center justify-center p-8 text-blue-500">
-                  <Loader2 className="mr-2 h-8 w-8 animate-spin" />
-                  <span className="mt-2 text-lg font-medium">
-                    Synthesizing natural voice...
-                  </span>
-                </div>
-              ))}
-            {latestAudio?.data?.map((data) => {
-              if (data?.status == "processing" || data?.status == "pending") {
-                return (
-                  <div className="flex flex-col items-center justify-center p-8 text-blue-500">
-                    <Loader2 className="mr-2 h-8 w-8 animate-spin" />
-                    <span className="mt-2 text-lg font-medium">
-                      Synthesizing natural voice...
-                    </span>
-                  </div>
-                );
-              }
-              if (data?.status == "failed") {
-                return (
-                  <div className="flex flex-col items-center justify-center p-8 text-red-500">
-                    <p className="text-lg font-medium">
-                      Audio generation failed out. Please try again.
-                    </p>
-                  </div>
-                );
-              }
-              const time = data?.updatedAt || data?.createdAt;
-              return (
-                <div className="space-y-4 rounded-lg border border-gray-200 p-4 shadow-sm transition-shadow duration-300 ease-out hover:shadow-md">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-semibold">Generated Audio</h4>
-                    <div className="flex gap-1 items-center">
-                      {time && (
-                        <span className="text-xs text-gray-400 mr-2">
-                          {moment(time).fromNow()}
-                        </span>
-                      )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => regenerateContent("audio")}
-                        disabled={regeneratingContent === "audio"}
-                        className="text-gray-500 transition-colors duration-200 hover:bg-green-50 hover:text-green-600"
-                      >
-                        {regeneratingContent === "audio" ? (
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                          <RefreshCw className="h-4 w-4" />
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          downloadContent(
-                            data?.content_or_url || "",
-                            "generated-audio.wav",
-                          )
-                        }
-                        className="text-gray-500 transition-colors duration-200 hover:bg-purple-50 hover:text-purple-600"
-                      >
-                        <Download className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="mt-2 w-full">
-                    <audio
-                      controls
-                      src={data?.content_or_url}
-                      className="w-full rounded-md"
-                    ></audio>
-                  </div>
-                </div>
-              );
-            })}
-            {/* {isGenerating &&
-            !content.audioUrl &&
+            {(isGenerating ||
+              latestAudio.isLoading ||
+              latestAudio.isFetching) &&
+            !latestAudio?.data?.length &&
             contentsStatus.audioLoading !== "timeout" ? (
               <div className="flex flex-col items-center justify-center p-8 text-blue-500">
                 <Loader2 className="mr-2 h-8 w-8 animate-spin" />
@@ -837,54 +791,77 @@ export function GeneratedContent({
                   Synthesizing natural voice...
                 </span>
               </div>
-            ) : content.audioUrl ? (
-              <div className="space-y-4 rounded-lg border border-gray-200 p-4 shadow-sm transition-shadow duration-300 ease-out hover:shadow-md">
-                <div className="flex items-center justify-between">
-                  <h4 className="font-semibold">Generated Audio</h4>
-                  <div className="flex gap-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => regenerateContent("audio")}
-                      disabled={regeneratingContent === "audio"}
-                      className="text-gray-500 transition-colors duration-200 hover:bg-green-50 hover:text-green-600"
-                    >
-                      {regeneratingContent === "audio" ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-4 w-4" />
-                      )}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() =>
-                        downloadContent(
-                          content.audioUrl || "",
-                          "generated-audio.wav",
-                        )
-                      }
-                      className="text-gray-500 transition-colors duration-200 hover:bg-purple-50 hover:text-purple-600"
-                    >
-                      <Download className="h-4 w-4" />
-                    </Button>
+            ) : (
+              latestAudio?.data?.map((data) => {
+                if (data?.status == "processing" || data?.status == "pending") {
+                  return (
+                    <div className="flex flex-col items-center justify-center p-8 text-blue-500">
+                      <Loader2 className="mr-2 h-8 w-8 animate-spin" />
+                      <span className="mt-2 text-lg font-medium">
+                        Synthesizing natural voice...
+                      </span>
+                    </div>
+                  );
+                }
+                if (data?.status == "failed") {
+                  return (
+                    <div className="flex flex-col items-center justify-center p-8 text-red-500">
+                      <p className="text-lg font-medium">
+                        Audio generation failed out. Please try again.
+                      </p>
+                    </div>
+                  );
+                }
+                const time = data?.updatedAt || data?.createdAt;
+                return (
+                  <div className="space-y-4 rounded-lg border border-gray-200 p-4 shadow-sm transition-shadow duration-300 ease-out hover:shadow-md">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold">Generated Audio</h4>
+                      <div className="flex items-center gap-1">
+                        {time && (
+                          <span className="mr-2 text-xs text-gray-400">
+                            {moment(time).fromNow()}
+                          </span>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => regenerateContent("audio")}
+                          disabled={regeneratingContent === "audio"}
+                          className="text-gray-500 transition-colors duration-200 hover:bg-green-50 hover:text-green-600"
+                        >
+                          {regeneratingContent === "audio" ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            downloadContent(
+                              data?.content_or_url || "",
+                              "generated-audio.wav",
+                            )
+                          }
+                          className="text-gray-500 transition-colors duration-200 hover:bg-purple-50 hover:text-purple-600"
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="mt-2 w-full">
+                      <audio
+                        controls
+                        src={data?.content_or_url}
+                        className="w-full rounded-md"
+                      ></audio>
+                    </div>
                   </div>
-                </div>
-                <div className="mt-2 w-full">
-                  <audio
-                    controls
-                    src={content.audioUrl}
-                    className="w-full rounded-md"
-                  ></audio>
-                </div>
-              </div>
-            ) : contentsStatus.audioLoading === "timeout" ? (
-              <div className="flex flex-col items-center justify-center p-8 text-red-500">
-                <p className="text-lg font-medium">
-                  Audio generation timed out. Please try again.
-                </p>
-              </div>
-            ) : null} */}
+                );
+              })
+            )}
           </TabsContent>
         </Tabs>
 
