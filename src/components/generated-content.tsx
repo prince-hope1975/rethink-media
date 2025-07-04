@@ -506,12 +506,12 @@ export function GeneratedContent({
                   return (
                     <div
                       key={data.id || idx}
-                      className="space-y-2 rounded border border-white p-1"
+                      className="space-y-4 rounded-xl border border-gray-200 bg-white/90 dark:bg-gray-900/80 p-3 sm:p-4 shadow-sm transition-shadow duration-300 ease-out hover:shadow-md"
                     >
                       {/* Headline */}
-                      <div className="space-y-2 rounded-lg border-b border-gray-200/50 p-4 shadow-sm transition-shadow duration-300 ease-out hover:shadow-md">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-semibold">Marketing Headline</h4>
+                      <div className="space-y-2 rounded-lg border-b border-gray-200/50 pb-3 mb-2 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-900 p-3 sm:p-4 shadow-sm">
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="font-semibold text-sm sm:text-base text-blue-700 dark:text-blue-200"> Headline</h4>
                           <div className="flex items-center gap-1">
                             {time && (
                               <span className="mr-2 text-xs text-gray-400">
@@ -558,15 +558,15 @@ export function GeneratedContent({
                           </div>
                         </div>
                         <div className="mt-2">
-                          <p className="text-xl font-bold">
+                          <p className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white break-words leading-snug">
                             {textContent.headline}
                           </p>
                         </div>
                       </div>
                       {/* Caption */}
-                      <div className="space-y-2 rounded-lg border-b border-gray-200/50 p-4 shadow-sm transition-shadow duration-300 ease-out hover:shadow-md">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-semibold">Marketing Caption</h4>
+                      <div className="space-y-2 rounded-lg p-3 sm:p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-gray-900 dark:to-gray-800">
+                        <div className="flex items-center justify-between mb-1">
+                          <h4 className="font-semibold text-sm sm:text-base text-purple-700 dark:text-purple-200"> Caption</h4>
                           <div className="flex items-center gap-1">
                             {time && (
                               <span className="mr-2 text-xs text-gray-400">
@@ -613,7 +613,7 @@ export function GeneratedContent({
                           </div>
                         </div>
                         <div className="mt-2">
-                          <p className="leading-relaxed">
+                          <p className="text-base sm:text-lg text-gray-800 dark:text-gray-200 break-words leading-relaxed">
                             {textContent.caption}
                           </p>
                         </div>
