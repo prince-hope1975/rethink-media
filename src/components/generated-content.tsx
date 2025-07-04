@@ -53,6 +53,58 @@ interface GeneratedContentProps {
   chatId: string | undefined;
 }
 
+// Utility: Animated Loader for different content types
+function LoadingSection({
+  type,
+  message,
+  subtext,
+}: {
+  type: "text" | "media" | "audio";
+  message: string;
+  subtext?: string;
+}) {
+  let icon;
+  let gradient;
+  let animation;
+  switch (type) {
+    case "media":
+      icon = <ImageIcon className="mb-2 h-10 w-10 animate-bounce" />;
+      gradient = "from-pink-400 via-purple-400 to-blue-400";
+      animation = "animate-pulse";
+      break;
+    case "audio":
+      icon = <Volume2 className="animate-wave mb-2 h-10 w-10" />;
+      gradient = "from-blue-400 via-green-400 to-purple-400";
+      animation = "animate-pulse";
+      break;
+    case "text":
+    default:
+      icon = <FileText className="mb-2 h-10 w-10 animate-bounce" />;
+      gradient = "from-purple-400 via-blue-400 to-pink-400";
+      animation = "animate-pulse";
+      break;
+  }
+  return (
+    <div
+      className={`flex flex-col items-center justify-center rounded-xl bg-gradient-to-br p-10 ${gradient} bg-clip-padding shadow-lg ${animation}`}
+      style={{ minHeight: 220 }}
+    >
+      <div className="flex flex-col items-center justify-center">
+        {icon}
+        <Loader2 className="mb-2 h-8 w-8 animate-spin text-white" />
+      </div>
+      <span className="mt-2 text-center text-lg font-semibold text-white drop-shadow-lg">
+        {message}
+      </span>
+      {subtext && (
+        <span className="mt-1 text-center text-sm text-white/80">
+          {subtext}
+        </span>
+      )}
+    </div>
+  );
+}
+
 export function GeneratedContent({
   content,
   isGenerating,
@@ -69,9 +121,11 @@ export function GeneratedContent({
     null,
   );
   const [openPromptDialog, setOpenPromptDialog] = useState<null | {
-    type: "headline" | "media" | "audio";
+    type: "headline" | "caption" | "media" | "audio" | "image" | "video";
     value: string;
+    id: string | number | undefined;
   }>(null);
+  console.log({ openPromptDialog });
 
   const hasContent = Object.keys(content).length > 0;
 
@@ -121,17 +175,24 @@ export function GeneratedContent({
     return originalPrompt;
   };
 
-  const updatePromptForType = (
-    type: "headline" | "media" | "audio",
+  const updatePromptForItem = async (
+    type: "headline" | "caption" | "media" | "audio" | "image" | "video",
+    id: string | number | undefined,
     value: string,
   ) => {
-    if (type === "headline") {
-      onContentUpdate({ ...content, headlinePrompt: value });
-    } else if (type === "media") {
-      onContentUpdate({ ...content, mediaPrompt: value });
-    } else if (type === "audio") {
-      onContentUpdate({ ...content, audioPrompt: value });
+    if (type === "headline" || type === "caption") {
+      onContentUpdate({
+        ...content,
+        [type + "Prompt"]: value,
+      });
+      await regenerateContent(type);
+      return;
     }
+    onContentUpdate({
+      ...content,
+      [`${type}Prompt`]: value,
+    });
+    await regenerateContent(type);
   };
 
   const latestAudio = api.chat.getLatestAudios.useQuery(
@@ -147,10 +208,7 @@ export function GeneratedContent({
       },
     },
   );
-  console.log({
-    loading: latestAudio.isLoading,
-    fetching: latestAudio.isFetching,
-  });
+
   const latestImage = api.chat.getLatestImages.useQuery(
     { chatID: +chatId! },
     {
@@ -177,9 +235,7 @@ export function GeneratedContent({
       },
     },
   );
-  console.log({
-    video:latestVideo.data
-  })
+
   const latestText = api.chat.getLatestTexts.useQuery(
     { chatID: +chatId! },
     {
@@ -306,29 +362,19 @@ export function GeneratedContent({
           <TabsContent value="text" className="space-y-4">
             <div className="mb-2 flex items-center justify-end">
               <Dialog
-                open={
-                  !!openPromptDialog && openPromptDialog.type === "headline"
-                }
+                open={!!openPromptDialog}
                 onOpenChange={(open) => !open && setOpenPromptDialog(null)}
               >
-                <DialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setOpenPromptDialog({
-                        type: "headline",
-                        value: getPromptForType("headline"),
-                      })
-                    }
-                    className="text-xs"
-                  >
-                    <Edit className="mr-1 h-4 w-4" /> Edit Headline Prompt
-                  </Button>
-                </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Edit Headline Prompt</DialogTitle>
+                    <DialogTitle>
+                      Edit{" "}
+                      {openPromptDialog?.type
+                        ? openPromptDialog.type.charAt(0).toUpperCase() +
+                          openPromptDialog.type.slice(1)
+                        : ""}{" "}
+                      Prompt
+                    </DialogTitle>
                   </DialogHeader>
                   <Textarea
                     value={openPromptDialog?.value || ""}
@@ -348,10 +394,11 @@ export function GeneratedContent({
                       Cancel
                     </Button>
                     <Button
-                      onClick={() => {
+                      onClick={async () => {
                         if (openPromptDialog)
-                          updatePromptForType(
-                            "headline",
+                          await updatePromptForItem(
+                            openPromptDialog.type,
+                            openPromptDialog.id ?? undefined,
                             openPromptDialog.value,
                           );
                         setOpenPromptDialog(null);
@@ -365,12 +412,11 @@ export function GeneratedContent({
             </div>
             {(isGenerating || latestText.isLoading || latestText.isFetching) &&
             !latestText?.data?.length ? (
-              <div className="flex flex-col items-center justify-center p-8 text-blue-500">
-                <Loader2 className="mr-2 h-8 w-8 animate-spin" />
-                <span className="mt-2 text-lg font-medium">
-                  Generating captivating copy...
-                </span>
-              </div>
+              <LoadingSection
+                type="text"
+                message="Generating captivating copy..."
+                subtext="Crafting the perfect headline and caption for your brand."
+              />
             ) : (
               <div className="space-y-4">
                 {latestText?.data?.map((data, idx) => {
@@ -379,15 +425,12 @@ export function GeneratedContent({
                     data?.status === "pending"
                   ) {
                     return (
-                      <div
+                      <LoadingSection
                         key={data.id || idx}
-                        className="flex flex-col items-center justify-center p-8 text-blue-500"
-                      >
-                        <Loader2 className="mr-2 h-8 w-8 animate-spin" />
-                        <span className="mt-2 text-lg font-medium">
-                          Generating captivating copy...
-                        </span>
-                      </div>
+                        type="text"
+                        message="Generating captivating copy..."
+                        subtext="Crafting the perfect headline and caption for your brand."
+                      />
                     );
                   }
                   if (data?.status === "failed") {
@@ -414,11 +457,6 @@ export function GeneratedContent({
                       key={data.id || idx}
                       className="space-y-2 rounded border border-white p-1"
                     >
-                      {idx == 0 && (
-                        <h3 className="bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text px-4 text-xl font-bold text-transparent">
-                          Latest Generated Content
-                        </h3>
-                      )}
                       {/* Headline */}
                       <div className="space-y-2 rounded-lg border-b border-gray-200/50 p-4 shadow-sm transition-shadow duration-300 ease-out hover:shadow-md">
                         <div className="flex items-center justify-between">
@@ -432,7 +470,13 @@ export function GeneratedContent({
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => setEditingContent("headline")}
+                              onClick={() =>
+                                setOpenPromptDialog({
+                                  type: "headline",
+                                  value: data?.prompt || originalPrompt,
+                                  id: data?.id ?? undefined,
+                                })
+                              }
                               className="text-gray-500 transition-colors duration-200 hover:bg-blue-50 hover:text-blue-600"
                             >
                               <Edit className="h-4 w-4" />
@@ -481,7 +525,13 @@ export function GeneratedContent({
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => setEditingContent("caption")}
+                              onClick={() =>
+                                setOpenPromptDialog({
+                                  type: "caption",
+                                  value: data?.prompt || originalPrompt,
+                                  id: data?.id ?? undefined,
+                                })
+                              }
                               className="text-gray-500 transition-colors duration-200 hover:bg-blue-50 hover:text-blue-600"
                             >
                               <Edit className="h-4 w-4" />
@@ -527,27 +577,23 @@ export function GeneratedContent({
           <TabsContent value="media" className="space-y-4">
             <div className="mb-2 flex items-center justify-end">
               <Dialog
-                open={!!openPromptDialog && openPromptDialog.type === "media"}
+                open={
+                  !!openPromptDialog &&
+                  (openPromptDialog.type === "video" ||
+                    openPromptDialog.type === "image")
+                }
                 onOpenChange={(open) => !open && setOpenPromptDialog(null)}
               >
-                <DialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setOpenPromptDialog({
-                        type: "media",
-                        value: getPromptForType("media"),
-                      })
-                    }
-                    className="text-xs"
-                  >
-                    <Edit className="mr-1 h-4 w-4" /> Edit Media Prompt
-                  </Button>
-                </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Edit Media Prompt</DialogTitle>
+                    <DialogTitle>
+                      Edit{" "}
+                      {openPromptDialog?.type
+                        ? openPromptDialog.type.charAt(0).toUpperCase() +
+                          openPromptDialog.type.slice(1)
+                        : ""}{" "}
+                      Prompt
+                    </DialogTitle>
                   </DialogHeader>
                   <Textarea
                     value={openPromptDialog?.value || ""}
@@ -567,9 +613,13 @@ export function GeneratedContent({
                       Cancel
                     </Button>
                     <Button
-                      onClick={() => {
+                      onClick={async () => {
                         if (openPromptDialog)
-                          updatePromptForType("media", openPromptDialog.value);
+                          await updatePromptForItem(
+                            openPromptDialog.type,
+                            openPromptDialog.id ?? undefined,
+                            openPromptDialog.value,
+                          );
                         setOpenPromptDialog(null);
                       }}
                     >
@@ -604,12 +654,11 @@ export function GeneratedContent({
                 contentsStatus.mediaStatus !== "timeout"
               ) {
                 return (
-                  <div className="flex flex-col items-center justify-center p-8 text-blue-500">
-                    <Loader2 className="mr-2 h-8 w-8 animate-spin" />
-                    <span className="mt-2 text-lg font-medium">
-                      Crafting your visual masterpiece...
-                    </span>
-                  </div>
+                  <LoadingSection
+                    type="media"
+                    message="Crafting your visual masterpiece..."
+                    subtext={`Generating a stunning ${content?.mediaType ?? "image"} to match your prompt.`}
+                  />
                 );
               }
               if (contentsStatus.mediaStatus === "timeout") {
@@ -631,15 +680,12 @@ export function GeneratedContent({
                   data?.status === "pending"
                 ) {
                   return (
-                    <div
+                    <LoadingSection
                       key={data.id || idx}
-                      className="flex flex-col items-center justify-center p-8 text-blue-500"
-                    >
-                      <Loader2 className="mr-2 h-8 w-8 animate-spin" />
-                      <span className="mt-2 text-lg font-medium">
-                        Crafting your visual masterpiece...
-                      </span>
-                    </div>
+                      type="media"
+                      message="Crafting your visual masterpiece..."
+                      subtext="Generating a stunning {data?.type === 'video' ? 'video' : 'image'} to match your prompt."
+                    />
                   );
                 }
                 if (data?.status === "failed") {
@@ -675,16 +721,15 @@ export function GeneratedContent({
                           variant="ghost"
                           size="sm"
                           onClick={() =>
-                            regenerateContent(data?.type || "image")
+                            setOpenPromptDialog({
+                              type: data.type === "video" ? "video" : "image",
+                              value: data.prompt || getPromptForType("media"),
+                              id: data.id ?? undefined,
+                            })
                           }
-                          disabled={regeneratingContent === data?.type}
-                          className="text-gray-500 transition-colors duration-200 hover:bg-green-50 hover:text-green-600"
+                          className="text-gray-500 transition-colors duration-200 hover:bg-blue-50 hover:text-blue-600"
                         >
-                          {regeneratingContent === data?.type ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <RefreshCw className="h-4 w-4" />
-                          )}
+                          <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
@@ -730,21 +775,7 @@ export function GeneratedContent({
                 open={!!openPromptDialog && openPromptDialog.type === "audio"}
                 onOpenChange={(open) => !open && setOpenPromptDialog(null)}
               >
-                <DialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      setOpenPromptDialog({
-                        type: "audio",
-                        value: getPromptForType("audio"),
-                      })
-                    }
-                    className="text-xs"
-                  >
-                    <Edit className="mr-1 h-4 w-4" /> Edit Audio Prompt
-                  </Button>
-                </DialogTrigger>
+                <DialogTrigger asChild></DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Edit Audio Prompt</DialogTitle>
@@ -767,9 +798,13 @@ export function GeneratedContent({
                       Cancel
                     </Button>
                     <Button
-                      onClick={() => {
+                      onClick={async () => {
                         if (openPromptDialog)
-                          updatePromptForType("audio", openPromptDialog.value);
+                          updatePromptForItem(
+                            "audio",
+                            null,
+                            openPromptDialog.value,
+                          );
                         setOpenPromptDialog(null);
                       }}
                     >
@@ -785,22 +820,21 @@ export function GeneratedContent({
               latestAudio.isFetching) &&
             !latestAudio?.data?.length &&
             contentsStatus.audioLoading !== "timeout" ? (
-              <div className="flex flex-col items-center justify-center p-8 text-blue-500">
-                <Loader2 className="mr-2 h-8 w-8 animate-spin" />
-                <span className="mt-2 text-lg font-medium">
-                  Synthesizing natural voice...
-                </span>
-              </div>
+              <LoadingSection
+                type="audio"
+                message="Synthesizing natural voice..."
+                subtext="Creating a lifelike audio narration for your content."
+              />
             ) : (
-              latestAudio?.data?.map((data) => {
+              latestAudio?.data?.map((data, idx) => {
                 if (data?.status == "processing" || data?.status == "pending") {
                   return (
-                    <div className="flex flex-col items-center justify-center p-8 text-blue-500">
-                      <Loader2 className="mr-2 h-8 w-8 animate-spin" />
-                      <span className="mt-2 text-lg font-medium">
-                        Synthesizing natural voice...
-                      </span>
-                    </div>
+                    <LoadingSection
+                      key={data.id || idx}
+                      type="audio"
+                      message="Synthesizing natural voice..."
+                      subtext="Creating a lifelike audio narration for your content."
+                    />
                   );
                 }
                 if (data?.status == "failed") {
@@ -826,15 +860,16 @@ export function GeneratedContent({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => regenerateContent("audio")}
-                          disabled={regeneratingContent === "audio"}
-                          className="text-gray-500 transition-colors duration-200 hover:bg-green-50 hover:text-green-600"
+                          onClick={() =>
+                            setOpenPromptDialog({
+                              type: "audio",
+                              value: data?.prompt || getPromptForType("audio"),
+                              id: data?.id ?? undefined,
+                            })
+                          }
+                          className="text-gray-500 transition-colors duration-200 hover:bg-blue-50 hover:text-blue-600"
                         >
-                          {regeneratingContent === "audio" ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <RefreshCw className="h-4 w-4" />
-                          )}
+                          <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"

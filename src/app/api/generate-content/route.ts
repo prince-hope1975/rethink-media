@@ -31,7 +31,8 @@ export async function POST(request: NextRequest) {
     const {
       prompt,
       tone,
-      mediaStyle: meiaStyle,
+      mediaStyle: mediaStyle,
+      audioType,
       voiceStyle,
       contentLengthInSeconds,
       chatID,
@@ -39,6 +40,14 @@ export async function POST(request: NextRequest) {
     } = z_generateContentInterface.parse(body);
 
     const ai = new GoogleGenAI({ vertexai: false, apiKey: GEMINI_API_KEY });
+
+    const audioPrompt = `
+    ${
+      audioType == "voice"
+        ? `An audio prompt for a voiceover ${contentLengthInSeconds} sec long that matches the tone and content, it should detail the what is to be said and the time where it should be said`
+        : `An audio prompt for a jingle  sec long that matches the tone and content, it should detail the what is to be said and the time where it should be said`
+    }
+    `;
 
     // Generate text content (headline and caption)
     const textPrompt = `
@@ -56,8 +65,8 @@ export async function POST(request: NextRequest) {
       Generate:
       1. A compelling marketing headline (max 10 words)
       2. A marketing caption (2-3 sentences)
-      3. ${mediaType == "image" ? "An image" : "A detailed video"} prompt for a ${meiaStyle ?? "3D digital art"} style that complements the content.
-      4. An audio prompt for a voiceover ${contentLengthInSeconds} sec long that matches the tone and content, it should detail the what is to be said and the time where it should be said.
+      3. ${mediaType == "image" ? "An image" : "A detailed video"} prompt for a ${mediaStyle ?? "3D digital art"} style that complements the content.
+      4. ${audioPrompt}.
       
       Format your response as JSON with "headline" and "caption" fields.
       !Important: Ensure the content is engaging and suitable for a marketing campaign.
@@ -156,15 +165,6 @@ export async function POST(request: NextRequest) {
       dataBaseID,
       lastTextIndex,
     });
-    console.log("Stored headlines and throwing error");
-    console.log({
-      content: {
-        caption: content.caption,
-        headline: content.headline,
-      },
-      dataBaseID,
-      lastTextIndex,
-    });
 
     // Mechanism for switching between image and video
     const mediaCall = async (mediaType: "video" | "image") => {
@@ -183,17 +183,24 @@ export async function POST(request: NextRequest) {
       }
     };
 
-    after(async () => {
-      await Promise.allSettled([
-        mediaCall(mediaType),
-
-        generateAndStoreAudio({
-          content,
+    const voiceCall = async (audioType: "jingle" | "voice") => {
+      if (audioType == "jingle") {
+        await generateAndStoreAudioJingle({
+          content: { audioPrompt: content.audioPrompt },
           dataBaseID,
-          lastAudioIndex,
-        }),
-        ,
-      ]);
+          lastAudioIndex: lastAudioIndex,
+        });
+      } else {
+        await generateAndStoreAudioVoice({
+          content: { audioPrompt: content.audioPrompt },
+          dataBaseID,
+          lastAudioIndex: lastAudioIndex,
+        });
+      }
+    };
+
+    after(async () => {
+      await Promise.allSettled([mediaCall(mediaType), voiceCall(audioType)]);
     });
 
     const responsePayload = {
@@ -252,16 +259,15 @@ export const generateAndStoreVideo = async ({
     if (!content.videoPrompt) {
       throw new Error("Image prompt is missing in the generated content");
     }
-    await db.insert(media)
-      .values({
-        chatId: dataBaseID,
-        index: (lastImageIndex.at(0)?.index ?? 0) + 1,
-        type: "video",
-        status: "pending",
-        content_or_url: "",
-        prompt: content.videoPrompt,
-      })
-      
+    await db.insert(media).values({
+      chatId: dataBaseID,
+      index: (lastImageIndex.at(0)?.index ?? 0) + 1,
+      type: "video",
+      status: "pending",
+      content_or_url: "",
+      prompt: content.videoPrompt,
+    });
+
     const result = await fal.subscribe("fal-ai/ltx-video", {
       input: {
         prompt: content.videoPrompt,
@@ -339,16 +345,15 @@ export const generateAndStoreImage = async ({
     if (!content.imagePrompt) {
       throw new Error("Image prompt is missing in the generated content");
     }
-    await db.insert(media)
-      .values({
-        chatId: dataBaseID,
-        index: (lastImageIndex.at(0)?.index ?? 0) + 1,
-        type: "image",
-        status: "pending",
-        content_or_url: "",
-        prompt: content.imagePrompt,
-      })
-      
+    await db.insert(media).values({
+      chatId: dataBaseID,
+      index: (lastImageIndex.at(0)?.index ?? 0) + 1,
+      type: "image",
+      status: "pending",
+      content_or_url: "",
+      prompt: content.imagePrompt,
+    });
+
     const imgContent = await ai.models.generateImages({
       // model: " imagen-4.0-generate-preview-06-06",
       model: "models/imagen-4.0-generate-preview-06-06",
@@ -417,7 +422,7 @@ export const generateAndStoreImage = async ({
 };
 
 // Standalone function for audio generation and storage
-export const generateAndStoreAudio = async ({
+export const generateAndStoreAudioVoice = async ({
   content,
   dataBaseID,
   lastAudioIndex,
@@ -427,9 +432,7 @@ export const generateAndStoreAudio = async ({
     if (!content.audioPrompt) {
       throw new Error("Audio prompt is missing in the generated content");
     }
-    await db
-    .insert(media)
-    .values({
+    await db.insert(media).values({
       chatId: dataBaseID,
       index: (lastAudioIndex.at(0)?.index ?? 0) + 1,
       type: "audio",
@@ -437,7 +440,7 @@ export const generateAndStoreAudio = async ({
       content_or_url: "",
       status: "processing",
       prompt: content.audioPrompt,
-    })
+    });
     const audioData = await generateAudioTTS(content.audioPrompt);
     console.log("Audio generation response:", audioData);
 
@@ -501,6 +504,94 @@ export const generateAndStoreAudio = async ({
         status: "failed",
         prompt: content.audioPrompt,
         content_or_url: "",
+      })
+      .onConflictDoUpdate({
+        target: [media.chatId, media.type, media.index],
+        set: { status: "failed" },
+      });
+  }
+};
+// Standalone function for video generation and storage
+export const generateAndStoreAudioJingle = async ({
+  content,
+  dataBaseID,
+  lastAudioIndex,
+}: GenerateAndStoreAudioParams) => {
+  try {
+    // const ai = new GoogleGenAI({ vertexai: false, apiKey: GEMINI_API_KEY });
+
+    if (!content.audioPrompt) {
+      throw new Error("Image prompt is missing in the generated content");
+    }
+    await db.insert(media).values({
+      chatId: dataBaseID,
+      index: (lastAudioIndex.at(0)?.index ?? 0) + 1,
+      type: "audio",
+      status: "pending",
+      content_or_url: "",
+      prompt: content.audioPrompt,
+    });
+
+    console.log({ content });
+    const result = await fal.subscribe("fal-ai/stable-audio", {
+      input: {
+        prompt: content.audioPrompt,
+        seconds_total: 5,
+      },
+      logs: true,
+      // onQueueUpdate: (update) => {
+      //   if (update.status === "IN_PROGRESS") {
+      //     update.logs.map((log) => log.message).forEach(console.log);
+      //   }
+      // },
+    });
+    const audioFile = result.data.audio_file;
+
+
+    // Download the video file from the returned URL
+    const audioResponse = await fetch(audioFile.url);
+    if (!audioResponse.ok) {
+      throw new Error(`Failed to download video from ${audioFile.url}`);
+    }
+    const audioBuffer = Buffer.from(await audioResponse.arrayBuffer());
+
+    // Upload the video to Vercel Blob
+    console.log("Uploading video to Vercel Blob...");
+    const blob = await put(
+      `chat-${dataBaseID}-audio-${Date.now()}.mp3`,
+      audioBuffer,
+      {
+        access: "public",
+        contentType: "audio/mpeg",
+      },
+    );
+    console.log("audio uploaded to:", blob.url);
+
+    await db
+      .insert(media)
+      .values({
+        chatId: dataBaseID,
+        index: (lastAudioIndex.at(0)?.index ?? 0) + 1,
+        type: "audio",
+        content_or_url: blob.url, // Use the Vercel Blob URL
+        status: "completed",
+        prompt: content.audioPrompt,
+      })
+      .onConflictDoUpdate({
+        target: [media.chatId, media.type, media.index],
+        set: { status: "completed", content_or_url: blob.url },
+      });
+    console.log("audio media record inserted");
+  } catch (err) {
+    console.error("Error in generating jingle:", err);
+    await db
+      .insert(media)
+      .values({
+        chatId: dataBaseID,
+        index: (lastAudioIndex.at(0)?.index ?? 0) + 1,
+        type: "audio",
+        content_or_url: "",
+        status: "failed",
       })
       .onConflictDoUpdate({
         target: [media.chatId, media.type, media.index],

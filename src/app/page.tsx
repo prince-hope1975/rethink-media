@@ -94,6 +94,7 @@ export default function Home() {
   ];
 
   const [mediaType, setMediaType] = useState<"image" | "video">("image");
+  const [audioType, setAudioType] = useState<"voice" | "jingle">("voice");
   const searchParams = useSearchParams();
   const handleGenerate = async () => {
     if (!prompt.trim()) return;
@@ -115,6 +116,7 @@ export default function Home() {
           voiceStyle,
           files: uploadedFiles.map((f) => f.name), // In real app, you'd upload files first
           mediaType,
+          audioType,
         }),
       });
 
@@ -242,6 +244,7 @@ export default function Home() {
                     mediaStyle: mediaStyle,
                     voiceStyle,
                     mediaType,
+                    audioType,
                     contentLengthInSeconds: 6,
                     chatID: !!chat_id ? parseInt(chat_id) : undefined,
                   } satisfies typeof z_generateContentInterface._type),
@@ -477,6 +480,19 @@ export default function Home() {
                         ))}
                       </SelectContent>
                     </Select>
+                    {/* Audio Type Switch */}
+                    <div className="mt-2 flex items-center gap-3">
+                      <Label className="font-semibold">Audio Type</Label>
+                      <Select value={audioType} onValueChange={setAudioType}>
+                        <SelectTrigger className="border-gray-300 w-32 transition-all duration-300 ease-out focus:border-blue-400 focus:ring-blue-400">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="voice">Voice</SelectItem>
+                          <SelectItem value="jingle">Jingle</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 </div>
                 {/* File Upload */}

@@ -18,6 +18,7 @@ export const z_generateContentInterface = z.object({
   tone: tone,
   mediaStyle: z.string().min(1, "Image or video style is required"),
   voiceStyle: z.string().min(1, "Voice style is required"),
+  audioType: z.enum(["voice", "jingle"]).default("voice"),
   mediaType: z.enum(["video", "image"]),
   contentLengthInSeconds: z.number().optional().default(5),
 });

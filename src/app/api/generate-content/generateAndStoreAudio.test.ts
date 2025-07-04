@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { generateAndStoreAudio } from './route';
+import { generateAndStoreAudioVoice } from './route';
 
 // Manual mock function
 function createMockFn(): any {
@@ -73,7 +73,7 @@ test('should upload and store audio successfully', async (t) => {
   mockDb.values.mockReturnThis();
   mockDb.onConflictDoUpdate.mockReturnThis();
 
-  await generateAndStoreAudio(baseParams);
+  await generateAndStoreAudioVoice(baseParams);
   assert.ok(mockGenerateAudioTTS.mock.calls.length > 0, 'generateAudioTTS should be called');
   assert.ok(mockPut.mock.calls.length > 0, 'put should be called');
   assert.ok(mockDb.insert.mock.calls.length > 0, 'db.insert should be called');
@@ -81,14 +81,14 @@ test('should upload and store audio successfully', async (t) => {
 
 test('should handle missing audioPrompt', async (t) => {
   clearAllMocks();
-  await generateAndStoreAudio({ ...baseParams, content: { audioPrompt: '' } });
+  await generateAndStoreAudioVoice({ ...baseParams, content: { audioPrompt: '' } });
   assert.strictEqual(mockGenerateAudioTTS.mock.calls.length, 0, 'generateAudioTTS should not be called');
 });
 
 test('should handle audio generation failure', async (t) => {
   clearAllMocks();
   mockGenerateAudioTTS.mockResolvedValue({ candidates: [ { content: { parts: [ { inlineData: undefined } ] } } ] });
-  await generateAndStoreAudio(baseParams);
+  await generateAndStoreAudioVoice(baseParams);
   assert.strictEqual(mockPut.mock.calls.length, 0, 'put should not be called');
   assert.ok(mockDb.insert.mock.calls.length > 0, 'db.insert should be called'); // Should still insert failed status
 }); 
