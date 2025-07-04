@@ -361,9 +361,9 @@ export function GeneratedContent({
   }
 
   return (
-    <Card className="animate-in fade-in slide-in-from-bottom-4 h-fit overflow-hidden rounded-xl shadow-xl duration-1000">
-      <CardHeader className="bg-gradient-to-r from-purple-500 to-blue-500 px-6 py-4 text-white">
-        <CardTitle className="flex items-center justify-between text-white">
+    <Card className="animate-in fade-in slide-in-from-bottom-4 h-fit overflow-hidden rounded-xl shadow-xl duration-1000 w-full">
+      <CardHeader className="bg-gradient-to-r from-purple-500 to-blue-500 px-4 sm:px-6 py-3 sm:py-4 text-white">
+        <CardTitle className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-white gap-2 text-lg sm:text-xl">
           <span>Generated Content</span>
           {hasContent && (
             <Badge
@@ -375,9 +375,9 @@ export function GeneratedContent({
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-6">
+      <CardContent className="p-3 sm:p-6">
         <Tabs defaultValue="text" className="w-full">
-          <TabsList className="mb-4 grid w-full grid-cols-3 rounded-lg bg-gray-100 p-1">
+          <TabsList className="mb-4 grid w-full grid-cols-3 rounded-lg bg-gray-100 p-1 text-xs sm:text-sm">
             <TabsTrigger
               value="text"
               className="flex items-center gap-1 rounded-md transition-all duration-300 ease-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-blue-500 data-[state=active]:text-white data-[state=active]:shadow-md"
@@ -402,7 +402,7 @@ export function GeneratedContent({
           </TabsList>
 
           <TabsContent value="text" className="space-y-4">
-            <div className="mb-2 flex items-center justify-end">
+            <div className="mb-2 flex flex-col items-end gap-2 sm:flex-row sm:justify-end">
               <Dialog
                 open={!!openPromptDialog}
                 onOpenChange={(open) => !open && setOpenPromptDialog(null)}
@@ -626,7 +626,7 @@ export function GeneratedContent({
           </TabsContent>
 
           <TabsContent value="media" className="space-y-4">
-            <div className="mb-2 flex items-center justify-end">
+            <div className="mb-2 flex flex-col items-end gap-2 sm:flex-row sm:justify-end">
               <Dialog
                 open={
                   !!openPromptDialog &&
@@ -829,7 +829,7 @@ export function GeneratedContent({
           </TabsContent>
 
           <TabsContent value="audio" className="space-y-4">
-            <div className="mb-2 flex items-center justify-end">
+            <div className="mb-2 flex flex-col items-end gap-2 sm:flex-row sm:justify-end">
               <Dialog
                 open={!!openPromptDialog && openPromptDialog.type === "audio"}
                 onOpenChange={(open) => !open && setOpenPromptDialog(null)}

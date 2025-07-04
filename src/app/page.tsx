@@ -238,22 +238,19 @@ function HomeWithSearchParams() {
 
   return (
     <div className="min-h-screen">
-      <div className="mx-p container px-4 py-8">
-        <div className="mb-4 flex justify-end">
-          <Button variant="outline" onClick={handleNewChat}>
-            New Chat
-          </Button>
+      <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+        <div className="mb-4 flex flex-col sm:flex-row sm:justify-end gap-2">
+          <Button variant="outline" onClick={handleNewChat} className="w-full sm:w-auto">New Chat</Button>
         </div>
-        <div className="animate-in fade-in slide-in-from-top-4 mb-8 text-center duration-1000">
-          <h1 className="mb-2 bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-5xl font-extrabold text-transparent drop-shadow-lg">
+        <div className="animate-in fade-in slide-in-from-top-4 mb-6 sm:mb-8 text-center duration-1000">
+          <h1 className="mb-2 bg-gradient-to-r from-purple-500 to-blue-500 bg-clip-text text-3xl sm:text-5xl font-extrabold text-transparent drop-shadow-lg">
             Multimodal Content Generator
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-base sm:text-lg text-gray-600">
             Transform your ideas into compelling marketing content with AI
           </p>
         </div>
-
-        <div className="grid gap-8 lg:grid-cols-2">
+        <div className="grid gap-6 sm:gap-8 grid-cols-1 lg:grid-cols-2">
           {/* Input Section */}
           <form
             onSubmit={async (e) => {
@@ -365,15 +362,15 @@ function HomeWithSearchParams() {
             className=""
           >
             <Card className="h-fit">
-              <CardHeader className="flex flex-row justify-between gap-2">
-                <CardTitle className="flex items-center gap-2">
+              <CardHeader className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                   <Wand2 className="h-5 w-5" />
                   Content Configuration
                 </CardTitle>
                 <Button
                   type="submit"
                   disabled={!prompt.trim() || isGenerating}
-                  className="w-fit rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 text-lg font-semibold text-white shadow-lg transition-all duration-300 ease-out hover:scale-105 hover:from-purple-700 hover:to-blue-700 hover:shadow-xl"
+                  className="w-full sm:w-fit rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 text-base sm:text-lg font-semibold text-white shadow-lg transition-all duration-300 ease-out hover:scale-105 hover:from-purple-700 hover:to-blue-700 hover:shadow-xl"
                   size="lg"
                 >
                   {isGenerating ? (
@@ -389,9 +386,9 @@ function HomeWithSearchParams() {
                   )}
                 </Button>
               </CardHeader>
-              <CardContent className="space-y-6 rounded-b-xl bg-gradient-to-br p-6">
+              <CardContent className="space-y-6 rounded-b-xl bg-gradient-to-br p-4 sm:p-6">
                 {/* Prompt Input */}
-                <div className="flex items-center justify-between space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <Label htmlFor="prompt" className="font-semibold">
                       Product or Idea Prompt
@@ -432,17 +429,17 @@ function HomeWithSearchParams() {
                   placeholder="e.g., A smart water bottle that tracks hydration and reminds you to drink water"
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  className="min-h-[120px] border-gray-300 transition-all duration-300 ease-out focus:border-blue-400 focus:ring-blue-400"
+                  className="min-h-[100px] border-gray-300 transition-all duration-300 ease-out focus:border-blue-400 focus:ring-blue-400 text-base sm:text-lg"
                 />
                 {/* Tone Selection */}
                 <div className="space-y-3">
                   <Label className="font-semibold">Content Tone</Label>
-                  <div className="flex flex-wrap gap-3">
+                  <div className="flex flex-wrap gap-2 sm:gap-3">
                     {predefinedTones.map((t) => (
                       <Badge
                         key={t}
                         variant={tone === t ? "default" : "outline"}
-                        className={`cursor-pointer rounded-full px-4 py-1.5 text-base transition-all duration-300 ease-out ${
+                        className={`cursor-pointer rounded-full px-4 py-1.5 text-sm sm:text-base transition-all duration-300 ease-out ${
                           tone === t
                             ? "scale-105 bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md hover:from-purple-700 hover:to-blue-700"
                             : "border-gray-300 text-gray-600 hover:bg-gray-100"
@@ -454,7 +451,7 @@ function HomeWithSearchParams() {
                     ))}
                     <Badge
                       variant={tone === "custom" ? "default" : "outline"}
-                      className={`cursor-pointer rounded-full px-4 py-1.5 text-base transition-all duration-300 ease-out ${
+                      className={`cursor-pointer rounded-full px-4 py-1.5 text-sm sm:text-base transition-all duration-300 ease-out ${
                         tone === "custom"
                           ? "scale-105 bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-md hover:from-purple-700 hover:to-blue-700"
                           : "border-gray-300 text-gray-600 hover:bg-gray-100"
@@ -469,7 +466,7 @@ function HomeWithSearchParams() {
                       placeholder="Enter custom tone..."
                       value={customTone}
                       onChange={(e) => setCustomTone(e.target.value)}
-                      className="border-gray-300 transition-all duration-300 ease-out focus:border-blue-400 focus:ring-blue-400"
+                      className="border-gray-300 transition-all duration-300 ease-out focus:border-blue-400 focus:ring-blue-400 text-base sm:text-lg"
                     />
                   )}
                 </div>
@@ -478,7 +475,7 @@ function HomeWithSearchParams() {
                   <div className="space-y-2">
                     <Label className="font-semibold">Image Style</Label>
                     <Select value={mediaStyle} onValueChange={setMediaStyle}>
-                      <SelectTrigger className="border-gray-300 transition-all duration-300 ease-out focus:border-blue-400 focus:ring-blue-400">
+                      <SelectTrigger className="border-gray-300 transition-all duration-300 ease-out focus:border-blue-400 focus:ring-blue-400 text-base sm:text-lg">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -493,7 +490,7 @@ function HomeWithSearchParams() {
                   <div className="space-y-2">
                     <Label className="font-semibold">Voice Style</Label>
                     <Select value={voiceStyle} onValueChange={setVoiceStyle}>
-                      <SelectTrigger className="border-gray-300 transition-all duration-300 ease-out focus:border-blue-400 focus:ring-blue-400">
+                      <SelectTrigger className="border-gray-300 transition-all duration-300 ease-out focus:border-blue-400 focus:ring-blue-400 text-base sm:text-lg">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -505,13 +502,13 @@ function HomeWithSearchParams() {
                       </SelectContent>
                     </Select>
                     {/* Audio Type Switch */}
-                    <div className="mt-2 flex items-center gap-3">
+                    <div className="mt-2 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
                       <Label className="font-semibold">Audio Type</Label>
                       <Select
                         value={audioType}
                         onValueChange={(res) => setAudioType(res as any)}
                       >
-                        <SelectTrigger className="w-32 border-gray-300 transition-all duration-300 ease-out focus:border-blue-400 focus:ring-blue-400">
+                        <SelectTrigger className="w-full sm:w-32 border-gray-300 transition-all duration-300 ease-out focus:border-blue-400 focus:ring-blue-400 text-base sm:text-lg">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -527,12 +524,11 @@ function HomeWithSearchParams() {
                   files={uploadedFiles}
                   onFilesChange={setUploadedFiles}
                 />
-
                 {/* Generate Button */}
                 <Button
                   type="submit"
                   disabled={!prompt.trim() || isGenerating}
-                  className="w-full rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 text-lg font-semibold text-white shadow-lg transition-all duration-300 ease-out hover:scale-105 hover:from-purple-700 hover:to-blue-700 hover:shadow-xl"
+                  className="w-full rounded-full bg-gradient-to-r from-purple-600 to-blue-600 px-4 py-2 text-base sm:text-lg font-semibold text-white shadow-lg transition-all duration-300 ease-out hover:scale-105 hover:from-purple-700 hover:to-blue-700 hover:shadow-xl"
                   size="lg"
                 >
                   {isGenerating ? (
@@ -550,7 +546,6 @@ function HomeWithSearchParams() {
               </CardContent>
             </Card>
           </form>
-
           {/* Generated Content Section */}
           <GeneratedContent
             content={generatedContent}
